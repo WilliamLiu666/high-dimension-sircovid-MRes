@@ -1,0 +1,6 @@
+sircovid_name,spim_name
+deaths_inc,type28_death_inc_line
+diagnoses_admitted_inc,hospital_inc
+hosp,hospital_prev
+react_pos,prevalence_mtp
+infections_inc,infections_inc
