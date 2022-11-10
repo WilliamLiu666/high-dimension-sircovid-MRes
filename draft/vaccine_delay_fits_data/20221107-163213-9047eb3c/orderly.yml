@@ -1,0 +1,16 @@
+script: script.R
+
+artefacts:
+  - data:
+      description: Data for use in fits
+      filenames:
+        - data/uk_rtm.csv
+        - data/serology.csv
+        - data/data_vaccination.csv
+        - data/weighted_prior_ranges.csv
+
+resources:
+  - data/uk_rtm.csv
+  - data/serology.csv
+  - data/data_vaccination.csv
+  - data/weighted_prior_ranges.csv

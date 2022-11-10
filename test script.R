@@ -6,7 +6,7 @@ orderly::orderly_run(
   "vaccine_delay_fits_data"
 )
 
-orderly::orderly_develop_start(
+orderly::orderly_run(
   "vaccine_delay_parameters_fits",
   parameters = list(deterministic = TRUE),
   use_draft = "newer")
@@ -16,3 +16,4 @@ orderly::orderly_develop_start('vaccine_delay_fits',
                                        short_run = TRUE,
                                        deterministic = TRUE),
                      use_draft = "newer")
+
