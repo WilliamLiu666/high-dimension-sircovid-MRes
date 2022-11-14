@@ -1,9 +1,0 @@
-combined.rds
-outputs/*
-parameters/*
-figs/*
-run_grid_final.csv
-s_gene_region.csv
-Rt_future.csv
-rt_future.csv
-rt_values.csv
