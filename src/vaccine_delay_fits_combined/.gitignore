@@ -1,7 +1,1 @@
-global_*.R
-template_combined.xlsx
-regional_results
-regional_figs
-outputs
-figs
-age_profile.csv
+draft/

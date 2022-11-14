@@ -40,7 +40,8 @@ restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
   short_run, chains, deterministic, date_restart = restart_date,
-  n_mcmc = n_mcmc, burnin = burnin)
+  n_mcmc = n_mcmc, burnin = burnin,
+  compiled_compare = deterministic)
 
 
 data_rtm <- read_csv("data/rtm.csv")
@@ -77,9 +78,8 @@ data_inputs <- list(rtm = data_rtm,
                     full = data_full,
                     fitted = data)
 
-dat <- spimalot::spim_fit_process(samples, pars, data_inputs)
-dat$fit$simulate$n_doses <-
-simulate_calculate_vaccination_new(dat$fit$simulate$state, pars, region)
+dat <- spimalot::spim_fit_process(samples, pars, data_inputs,
+                                  control$particle_filter)
 
 dir.create("outputs", FALSE, TRUE)
 saveRDS(dat$fit, "outputs/fit.rds")
