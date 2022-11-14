@@ -1,7 +1,7 @@
 source("global_util.R")
 
-version_check("sircovid", "0.13.15")
-version_check("spimalot", "0.7.11")
+version_check("sircovid", "0.14.7")
+version_check("spimalot", "0.8.15")
 
 date <- "2021-09-13"
 model_type <- "BB"
@@ -11,8 +11,8 @@ trim_deaths <- 4
 trim_pillar2 <- 5
 
 ## MCMC control (only applies if short_run = FALSE)
-burnin <- 500
-n_mcmc <- 1500
+burnin <- 5000
+n_mcmc <- 15000
 chains <- 4
 kernel_scaling <- 0.2
 
