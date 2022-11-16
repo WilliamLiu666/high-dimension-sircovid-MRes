@@ -16,15 +16,9 @@ artefacts:
         - regional_results/Rt_england.rds
         - outputs/aggregated_data.rds
         
-  - data:
-      description: Files for forward simulation
-      filenames:
-        - outputs/combined.rds
-
   - staticgraph:
       description: regional fitting plots and projections for comparison
       filenames:
-        - figs/admissions_demo.png
         - figs/beta.png
         - figs/data_fits_regional.png
         - figs/forest_plot.png
@@ -34,8 +28,6 @@ artefacts:
         - figs/pillar2_all_ages.png
         - figs/pillar2_over25.png
         - figs/react.png
-        - figs/Rt_all.png
-        - figs/Rt_eff_all.png
         - figs/Rt_eff_general.png
         - figs/Rt_general.png
         - figs/serology_euroimmun.png
