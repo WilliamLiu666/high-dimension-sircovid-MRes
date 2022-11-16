@@ -69,9 +69,11 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ## > theta <- par2Rn(pars$mcmc$initial())
 ##
 ## to get the gradient we run
-## > gradient_LP(theta)
+## > grad <- gradient_LP(theta)
+## grad$LP gives the point estimate of the function
+## grad$grad_LP gives the gradient estimate at theta
 ##
-## to get a point estimate of the posterior we run
+## alternatively to get oonly a point estimate of the posterior we can run
 ## > RnPosterior(theta)
 
 ## This bit takes ages, of course
