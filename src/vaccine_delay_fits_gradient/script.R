@@ -66,7 +66,7 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ##
 ## to go from the epi parameter space to |R^n the fitting parameter space
 ## we can run
-## > theta <- par2Rn(pars$mcmc$model(pars$mcmc$initial()))
+## > theta <- par2Rn(pars$mcmc$initial())
 ##
 ## to get the gradient we run
 ## > gradient_LP(theta)
