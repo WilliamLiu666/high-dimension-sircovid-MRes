@@ -1,15 +1,15 @@
 source("global_util.R")
 
-version_check("sircovid", "0.13.15")
-version_check("spimalot", "0.7.11")
+version_check("sircovid", "0.14.7")
+version_check("spimalot", "0.8.15")
 
 date <- "2021-09-13"
-#date <- "2020-12-08"
 
 sircovid_model <- "lancelot"
 model_type <- "BB"
 
-dat <- spimalot::spim_combined_load("regional_results", "england")
+dat <- spimalot::spim_combined_load("regional_results", "england",
+                                    get_onward = FALSE)
 
 
 
@@ -18,20 +18,9 @@ dir.create("figs", FALSE, TRUE)
 dir.create("figs_by_age", FALSE, TRUE)
 dir.create("spim_view", FALSE, TRUE)
 
-#Paste in restart state and inflate to match end-of-fits epoch
-onward_2020_12_08 <- combined_onward_restart(dat$onward, "2020-12-08",
-                                             "regional_results",
-                                             "england")
-
-
 saveRDS(dat$data, "outputs/aggregated_data.rds")
 
 saveRDS(dat$rt$england, "regional_results/Rt_england.rds")
-
-#Instead of saving the original onward state from end of fits, we instead output
-#the state from our restart date.
-#saveRDS(dat$onward, "outputs/combined.rds")
-saveRDS(onward_2020_12_08, "outputs/combined.rds")
 
 spimalot::spim_pars_pmcmc_save(dat$parameters, "outputs/parameters")
 
@@ -117,14 +106,6 @@ write_png("figs/incidence_per_1000.png", width = 2400, height = 1200, res = 200,
           spimalot::spim_plot_incidence(
             dat, c(sircovid::regions("england"), "england"), per_1000 = TRUE))
 
-write_png("figs/Rt_all.png", width = 2400, height = 1200, res = 200,
-          spimalot::spim_plot_Rt(
-            dat, c(sircovid::regions("england"), "england"), "Rt_all"))
-
-write_png("figs/Rt_eff_all.png", width = 2400, height = 1200, res = 200,
-          spimalot::spim_plot_Rt(
-            dat, c(sircovid::regions("england"), "england"), "eff_Rt_all"))
-
 write_png("figs/Rt_eff_general.png", width = 2400, height = 1200, res = 200,
           spimalot::spim_plot_Rt(
             dat, c(sircovid::regions("england"), "england"),
@@ -137,10 +118,6 @@ write_png("figs/Rt_general.png", width = 2400, height = 1200, res = 200,
 write_png("figs/beta.png", width = 2400, height = 1200, res = 200,
           spimalot::spim_plot_Rt(
             dat, c(sircovid::regions("england"), "england"), "beta"))
-
-## plotting admissions demography
-write_png("figs/admissions_demo.png", width = 2400, height = 1000, res = 200,
-          spimalot::spim_plot_admissions_by_age(dat, "england"))
 
 
 ## add (zoomed in) plots of SPI-M-relevant trajectories

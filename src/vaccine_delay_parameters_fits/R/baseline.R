@@ -329,13 +329,20 @@ create_baseline <- function(region, date, model_type,
   ## Note that vaccine_uptake[i, j] is proportional uptake of dose j for group i 
   vaccine_uptake <- 
     array(uptake_by_age$central, c(length(uptake_by_age$central), 2))
-  vaccine_uptake <- cbind(vaccine_uptake,
-                          vaccine_uptake[, 1] * vaccine_booster_proportion)
   
-
+  data_vaccination <- data_vaccination %>%
+    dplyr::rename(dose1 = first_dose,
+                  dose2 = second_dose,
+                  dose3 = third_dose,
+                  dose4 = fourth_dose)
+  n_doses <- 2
+  dose_start_dates <- c("2020-12-08",
+                        "2020-12-08")
   vaccination <- 
     spimalot::spim_vaccination_data(date, region, vaccine_uptake, 
-                                    vaccine_days_to_effect, data_vaccination)
+                                    vaccine_days_to_effect, data_vaccination,
+                                    n_doses, dose_start_dates,
+                                    carehomes = TRUE)
 
   vaccine_schedule_real <- vaccination$schedule
   
