@@ -41,7 +41,7 @@ restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
 control <- spimalot::spim_control(
   short_run, chains, deterministic, date_restart = restart_date,
   n_mcmc = n_mcmc, burnin = burnin,
-  compiled_compare = deterministic)
+  compiled_compare = deterministic, adaptive_proposal = deterministic)
 
 
 data_rtm <- read_csv("data/rtm.csv")
