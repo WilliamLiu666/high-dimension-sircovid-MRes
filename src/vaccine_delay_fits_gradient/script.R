@@ -32,7 +32,10 @@ pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
 
 #Create the conversions functions for the parameters in order to fit in |R^d
+#And attach them to the pars object
 eval(parse(text = create_Rn2par(pars)))
+pars$par2Rn <- par2Rn
+pars$Rn2par <- Rn2par
 
 restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
 
@@ -66,10 +69,10 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ##
 ## to go from the epi parameter space to |R^n the fitting parameter space
 ## we can run
-## > theta <- par2Rn(pars$mcmc$initial())
+## > theta <- pars$par2Rn(pars$mcmc$initial())
 ##
 ## to get the gradient we run
-## > grad <- gradient_LP(theta)
+## > grad <- gradient_LP(theta, pars, filter)
 ## grad$LP gives the point estimate of the function
 ## grad$grad_LP gives the gradient estimate at theta
 ##

@@ -80,26 +80,26 @@ create_Rn2par <- function(pars){
 }
 
 #This function takes a R^n function and calculate the posterior of our model
-RnPosterior <- function(theta){
-  p <- Rn2par(theta)
+RnPosterior <- function(theta, filter, pars){
+  p <- pars$Rn2par(theta)
   LL_theta <- filter$run(pars = pars$mcmc$model(p))
   LP_theta <- pars$mcmc$prior(p)
   return(LL_theta+LP_theta)
 }
 
 #This function evaluate the posterior at multiple point in the parameter space
-calculate_posterior_map <- function(parameter_samples){
+calculate_posterior_map <- function(parameter_samples, filter, pars){
   apply(parameter_samples, 2, function(x)
-    RnPosterior(x))
+    RnPosterior(x, filter, pars))
 }
 
 #Calculate the gradient
-gradient_LP <- function(theta, eps = 1e-4){
+gradient_LP <- function(theta, pars, filter, eps = 1e-4){
   n <- length(theta)
   theta_h <- diag(eps,n) + matrix(rep(theta,n),ncol = n)
   
-  LP_theta <- RnPosterior(theta)
-  LP_h <- calculate_posterior_map(theta_h)
+  LP_theta <- RnPosterior(theta, filter, pars)
+  LP_h <- calculate_posterior_map(theta_h, filter, pars)
   
   list(LP = LP_theta,
        grad_LP = (LP_h-LP_theta)/eps)
