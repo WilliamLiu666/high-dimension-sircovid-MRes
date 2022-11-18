@@ -33,8 +33,7 @@ region <- spimalot::spim_check_region(region, FALSE)
 pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
 
-
-
+## Fix all unused parameters (those not impacting fitting before the date parameter)
 pars <- fix_unused_parameters(pars, date)
 
 
