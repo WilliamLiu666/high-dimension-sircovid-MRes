@@ -32,9 +32,12 @@ pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
 
 #Create the conversions functions for the parameters in order to fit in |R^d
+#And attach them to the pars object
 eval(parse(text = create_Rn2par(pars)))
+pars$par2Rn <- par2Rn
+pars$Rn2par <- Rn2par
 
-restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
+restart_date <- NULL
 
 ## This will probably want much more control, if we are to support
 ## using rrq etc to create a multinode job; some of that will depend a
@@ -43,7 +46,8 @@ restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
   short_run, chains, deterministic, date_restart = restart_date,
-  n_mcmc = n_mcmc, burnin = burnin)
+  n_mcmc = n_mcmc, burnin = burnin,
+  compiled_compare = deterministic, adaptive_proposal = deterministic)
 
 
 data_rtm <- read_csv("data/rtm.csv")
@@ -66,10 +70,10 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ##
 ## to go from the epi parameter space to |R^n the fitting parameter space
 ## we can run
-## > theta <- par2Rn(pars$mcmc$initial())
+## > theta <- pars$par2Rn(pars$mcmc$initial())
 ##
 ## to get the gradient we run
-## > grad <- gradient_LP(theta)
+## > grad <- gradient_LP(theta, pars, filter)
 ## grad$LP gives the point estimate of the function
 ## grad$grad_LP gives the gradient estimate at theta
 ##
@@ -92,7 +96,8 @@ data_inputs <- list(rtm = data_rtm,
                     full = data_full,
                     fitted = data)
 
-dat <- spimalot::spim_fit_process(samples, pars, data_inputs)
+dat <- spimalot::spim_fit_process(samples, pars, data_inputs,
+                                  control$particle_filter)
 dat$fit$simulate$n_doses <-
 simulate_calculate_vaccination_new(dat$fit$simulate$state, pars, region)
 
