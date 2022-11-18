@@ -3,7 +3,7 @@ source("global_util.R")
 version_check("sircovid", "0.13.15")
 version_check("spimalot", "0.7.11")
 
-date <- "2021-09-13"
+date <- "2020-09-13"
 model_type <- "BB"
 
 #Some data streams are unreliable for the last few days. Define how many days here.
@@ -30,6 +30,18 @@ region <- spimalot::spim_check_region(region, FALSE)
 #mcmc - some sort of initialisation object built from the above to pass to the mcmc
 pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
+
+
+## Do not fit betas which will not impact the fitting period
+i <- max(which(pars$base$beta_date < sircovid::sircovid_date(date)))
+fixed <- setdiff(pars$base$beta_names, sprintf("beta%d", seq_len(i + 1)))
+## Additionally manually add (carefully!) other parameters not impacting the
+## fitting period
+fixed <- c(fixed, "mu_D_2", "mu_gamma_H", "mu_gamma_H_2", "mu_gamma_H_3",
+           "mu_gamma_H_4", "p_H_2", "p_H_3", "rel_p_D_delta", "rel_p_H_delta",
+           "rel_p_ICU_delta", "seed_date_delta", "ta_delta")
+pars$mcmc <- pars$mcmc$fix(pars$mcmc$initial()[fixed])
+
 
 #Create the conversions functions for the parameters in order to fit in |R^d
 #And attach them to the pars object
