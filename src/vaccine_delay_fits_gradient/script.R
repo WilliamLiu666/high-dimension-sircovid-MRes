@@ -51,13 +51,13 @@ restart_date <- NULL
 
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
-  short_run, chains, deterministic, date_restart = restart_date,
+  short_run=FALSE, chains, deterministic, date_restart = restart_date,
   n_mcmc = n_mcmc, burnin = burnin,
   compiled_compare = deterministic, adaptive_proposal = deterministic)
 
 
-data_rtm <- read_csv("data/rtm.csv")
-data_serology <- read_csv("data/serology.csv")
+data_rtm <- read.csv("data/rtm.csv", stringsAsFactors = FALSE, check.names = FALSE)
+data_serology <- read.csv("data/serology.csv", stringsAsFactors = FALSE, check.names = FALSE)
 
 #This trims off dates and columns we don't want
 data <- spim_data(
@@ -72,19 +72,15 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 
 ## To run the model at this point, we just need to run:
 ##
-## > filter$run(pars$mcmc$model(pars$mcmc$initial()))
+filter$run(pars$mcmc$model(pars$mcmc$initial()))
 ##
 ## to go from the epi parameter space to |R^n the fitting parameter space
 ## we can run
-## > theta <- pars$par2Rn(pars$mcmc$initial())
-##
-## to get the gradient we run
-## > grad <- gradient_LP(theta, pars, filter)
-## grad$LP gives the point estimate of the function
-## grad$grad_LP gives the gradient estimate at theta
-##
-## alternatively to get oonly a point estimate of the posterior we can run
-## > RnPosterior(theta)
+theta <- pars$par2Rn(pars$mcmc$initial())
+
+## Run the HMC
+## TODO: Tune epsilon and L
+HMC_samples <- HMC_run(RnPosterior, gradient_LP, 0.0001, 30, theta, 50, filter, pars)
 
 ## This bit takes ages, of course
 samples <- spimalot::spim_fit_run(pars, filter, control$pmcmc)
