@@ -94,7 +94,7 @@ calculate_posterior_map <- function(parameter_samples, filter, pars){
 }
 
 #Calculate the gradient
-gradient_LP <- function(theta, pars, filter, eps = 1e-4){
+gradient_LP <- function(theta, filter, pars, eps = 1e-4){
   n <- length(theta)
   theta_h <- diag(eps,n) + matrix(rep(theta,n),ncol = n)
   
@@ -158,4 +158,62 @@ fix_unused_parameters <- function(pars, date) {
   pars$mcmc <- pars$mcmc$fix(pars$mcmc$initial()[fixed])
   
   pars
+}
+
+HMC <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter, pars)
+{
+  q = current_q
+  
+  p = rnorm(length(q),0,1) # independent standard normal variates
+  current_p = p
+  
+  # Make a half step for momentum at the beginning
+  p = p - epsilon * -gradient_LP(q, filter, pars)$grad_LP / 2
+  
+  # Alternate full steps for position and momentum
+  for (i in 1:L)
+  {
+    # Make a full step for the position
+    q = q + epsilon * p
+    # Make a full step for the momentum, except at end of trajectory
+    if (i!=L) p = p - epsilon * -gradient_LP(q, filter, pars)$grad_LP
+  }
+  
+  # Make a half step for momentum at the end.
+  p = p - epsilon * -gradient_LP(q, filter, pars)$grad_LP / 2
+  
+  # Negate momentum at end of trajectory to make the proposal symmetric
+  p = -p
+  
+  # Evaluate potential and kinetic energies at start and end of trajectory
+  current_U = -RnPosterior(current_q, filter, pars)
+  current_K = sum(current_p^2) / 2
+  proposed_U = -RnPosterior(q, filter, pars)
+  proposed_K = sum(p^2) / 2
+  
+  # Accept or reject the state at end of trajectory, returning either
+  # the position at the end of the trajectory or the initial position
+  if (runif(1) < exp(current_U-proposed_U+current_K-proposed_K))
+  {
+    return (q) # accept
+  }
+  else
+  {
+    return (current_q) # reject
+  }
+  
+}
+
+HMC_run <- function(RnPosterior, gradient_LP, epsilon, L, current_q, N, filter, pars){
+  
+  output <- matrix(0,N,length(current_q))
+  output[1,] <- current_q
+  
+  #Run HMC with N-1 iterations
+  for (i in 2:N){ 
+    print(i)
+    output[i,] <- HMC(RnPosterior, gradient_LP, epsilon, L, output[i-1,], filter, pars)
+  }
+  
+  return(output)
 }
