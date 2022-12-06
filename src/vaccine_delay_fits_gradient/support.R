@@ -28,55 +28,19 @@ simulate_calculate_vaccination_new <- function(state, pars, region) {
 #functions to pass parameter from Rn to par and vice-versa
 #This builds the function and use eval-parse to create it
 create_Rn2par <- function(pars){
+  
   #use this list as the reference for the list of names
   #the Rn vector is matching the order of this list
   par_names <- names(pars$mcmc$initial())
   
-  #Start of the function
-  Rn2par_text <- "Rn2par <- function(x){"
-  par2Rn_text <- "par2Rn <- function(x){"
+  i <- match(par_names, pars$info$name)
+  pars_min <- pars$info$min[i]
+  pars_max <- pars$info$max[i]
   
-  #Create a name 0 valued Named num vector in the par space
-  #and not named in the Rn space
-  Rn2par_text <- paste(Rn2par_text, "res <- rep(0,",length(par_names), ")\n", sep="")
-  Rn2par_text <- paste0(Rn2par_text, "names(res) <- c(\"",
-                        paste(par_names, collapse="\",\""),"\")\n")
-  par2Rn_text <- paste(par2Rn_text, "res <- rep(0,",length(par_names), ")\n", sep="")
+  pars$par2Rn <- function(x) log((x - pars_min) / (pars_max - x)) 
+  pars$Rn2par <- function(x) (pars_min + pars_max * exp(x)) / (1 + exp(x))
   
-  #Loop over the parameter names
-  for(i in seq_along(par_names)){
-    
-    #detect if the parameter is from a beta, gamma or undefined distribution
-    dist_form <- pars$prior[pars$prior$name==par_names[i],]$type
-    
-    if(dist_form == "gamma"){
-      Rn2par_text <- paste0(Rn2par_text, "res[\"",
-                            par_names[i], "\"] <- exp(x[",i,"])\n")
-      par2Rn_text <- paste0(par2Rn_text, "res[",i,"] <- log(x[\"",
-                            par_names[i], "\"","])\n")
-      
-    }
-    
-    if(dist_form == "beta"){
-      Rn2par_text <- paste0(Rn2par_text, "res[\"",
-                            par_names[i], "\"] <- exp(x[",i,"])/(exp(x[",i,"])+1)\n")
-      par2Rn_text <- paste0(par2Rn_text, "res[",i,"] <- log(x[\"",
-                            par_names[i], "\"","]/(1-x[\"",
-                            par_names[i], "\"","]))\n")
-    }
-    
-    if(dist_form == "null")
-    {
-      Rn2par_text <- paste0(Rn2par_text, "res[\"",
-                            par_names[i], "\"] <- x[",i,"]\n")
-      par2Rn_text <- paste0(par2Rn_text, "res[",i,"] <- x[\"",
-                            par_names[i], "\"]\n")
-    }
-  }
-  #Return the whole vector
-  Rn2par_text <- paste0(Rn2par_text, "res \n}")
-  par2Rn_text <- paste0(par2Rn_text, "res \n}")
-  return(list(Rn2par = Rn2par_text, par2Rn = par2Rn_text))
+  pars
 }
 
 #This function takes a R^n function and calculate the posterior of our model
