@@ -71,12 +71,17 @@ gradient_LP <- function(theta, pars, filter, eps = 1e-4){
 
 gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4, n_threads = 1){
   n <- length(theta)
+  ## first column will be theta, the following n columns will correspond to
+  ## one parameter perturbed
   theta_map <- cbind(rep(0, n), diag(eps, n)) +
     matrix(rep(theta, n + 1), ncol = n + 1)
 
+  ## calculate posterior across all columns in theta_map
   LP <- calculate_posterior_map_parallel(theta_map, filter, pars, n_threads)
   
+  ## first value corresponds to theta
   LP_theta <- LP[1]
+  ## the rest used to calculate gradient estimate
   LP_h <- LP[-1]
   names(LP_h) <- names(theta)
   
@@ -87,12 +92,17 @@ gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4, n_threads = 1)
 #This function evaluate the posterior at multiple point in the parameter space
 calculate_posterior_map_parallel <- function(parameter_samples, filter, pars,
                                              n_threads){
+  ## transform from Rn to parameter space
   p <- apply(parameter_samples, 2, pars$Rn2par)
   
+  ## transform to odin parameters
   model_pars <- apply(p, 2, pars$mcmc$model)
+  ## setup filter for parallelisation
   filter2 <- resize_filter(filter, length(model_pars), n_threads)
   
+  ## calculate log-likelihoods in parallel
   LL_theta <- filter2$run(model_pars)
+  ## calculate log-priors
   LPr_theta <- apply(p, 2, pars$mcmc$prior)
   
   LL_theta + LPr_theta
