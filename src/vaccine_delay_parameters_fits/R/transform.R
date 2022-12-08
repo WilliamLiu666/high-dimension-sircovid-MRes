@@ -90,6 +90,9 @@ compute_progression <- function(pars, progression_data) {
   # Time to diagnosis if admitted without test
   gamma_U_value <- 1 / 3
 
+  gamma_PCR_pre_value <- 0.1922243
+  gamma_PCR_pos_value <- 0.083
+  
   progression <- sircovid::lancelot_parameters_progression(
     dt,
     gamma_E = list(value = gamma_E),
@@ -101,7 +104,10 @@ compute_progression <- function(pars, progression_data) {
     gamma_ICU_W_R = list(value = gamma_ICU_W_R),
     gamma_W_D = list(value = gamma_W_D_value, date = mu_gamma_H_date),
     gamma_W_R = list(value = gamma_W_R_value, date = mu_gamma_H_date),
-    gamma_U = list(value = gamma_U_value))
+    gamma_U = list(value = gamma_U_value),
+    gamma_PCR_pre = list(value = gamma_PCR_pre_value),
+    gamma_PCR_pos = list(value = gamma_PCR_pos_value)
+    )
   progression[k_parameters$parameter] <- k_parameters$value
 
   ## These could possibly be moved to the sircovid as defaults
@@ -110,9 +116,7 @@ compute_progression <- function(pars, progression_data) {
   progression$k_sero_pre_2 <- 1
   progression$gamma_sero_pre_2 <- 1 / 13
   progression$k_PCR_pre <- 1
-  progression$gamma_PCR_pre <- 0.1922243
   progression$k_PCR_pos <- 1
-  progression$gamma_PCR_pos <- 0.083
   progression$k_sero_pos_1 <- 1
   progression$gamma_sero_pos_1 <- 1 / 200
   progression$k_sero_pos_2 <- 1
