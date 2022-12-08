@@ -81,15 +81,12 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ## grad$LP gives the point estimate of the function
 ## grad$grad_LP gives the gradient estimate at theta
 ##
+## a parallel version can be run with 
+## > n_threads <- spimalot::spim_control_cores()
+##
 ## alternatively to get oonly a point estimate of the posterior we can run
 ## > RnPosterior(theta)
-
-theta <- pars$par2Rn(pars$mcmc$initial())
-s1 <- system.time(grad1 <- gradient_LP(theta, pars, filter))
-n_threads <- spimalot::spim_control_cores()
-s2 <- system.time(grad2 <- gradient_LP_parallel(theta, pars, filter, n_threads = n_threads))
-saveRDS(s1, "s1.rds")
-saveRDS(s2, "s2.rds")
+## > grad <- gradient_LP_parallel(theta, pars, filter, n_threads = n_threads)
 
 ## This bit takes ages, of course
 samples <- spimalot::spim_fit_run(pars, filter, control$pmcmc)
