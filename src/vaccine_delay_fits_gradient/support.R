@@ -92,7 +92,7 @@ calculate_posterior_map_parallel <- function(parameter_samples, filter, pars,
   model_pars <- apply(p, 2, pars$mcmc$model)
   filter2 <- resize_filter(filter, length(model_pars), n_threads)
   
-  LL_theta <- vapply(model_pars, filter$run, numeric(1))
+  LL_theta <- filter2$run(model_pars)
   LPr_theta <- apply(p, 2, pars$mcmc$prior)
   
   LL_theta + LPr_theta
