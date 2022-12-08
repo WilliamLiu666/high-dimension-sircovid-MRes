@@ -418,9 +418,10 @@ create_baseline <- function(region, date, model_type,
   message("  - Testing transformation function")
   p <- tr(pars_info)
   message("  - Testing creating model with transformed parameters")
-  for (i in seq_along(p)) {
-    m <- sircovid::lancelot$new(p[[i]]$pars, 0, 1)
-  }
+  # for (i in seq_along(p)) {
+  #   m <- sircovid::lancelot$new(p[[i]]$pars, 0, 1)
+  # }
+  m <- sircovid::lancelot$new(p, 0, 1)
   
   ret
 }
