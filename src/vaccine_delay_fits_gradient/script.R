@@ -84,6 +84,13 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ## alternatively to get oonly a point estimate of the posterior we can run
 ## > RnPosterior(theta)
 
+theta <- pars$par2Rn(pars$mcmc$initial())
+s1 <- system.time(grad1 <- gradient_LP(theta, pars, filter))
+n_threads <- spimalot::spim_control_cores()
+s2 <- system.time(grad2 <- gradient_LP_parallel(theta, pars, filter, n_threads = 1))
+saveRDS(s1, "s1.rds")
+saveRDS(s2, "s2.rds")
+
 ## This bit takes ages, of course
 samples <- spimalot::spim_fit_run(pars, filter, control$pmcmc)
 

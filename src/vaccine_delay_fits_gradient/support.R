@@ -28,7 +28,6 @@ simulate_calculate_vaccination_new <- function(state, pars, region) {
 #functions to pass parameter from Rn to par and vice-versa
 #This builds the function and use eval-parse to create it
 create_Rn2par <- function(pars){
-  
   #use this list as the reference for the list of names
   #the Rn vector is matching the order of this list
   par_names <- names(pars$mcmc$initial())
@@ -36,6 +35,7 @@ create_Rn2par <- function(pars){
   i <- match(par_names, pars$info$name)
   pars_min <- pars$info$min[i]
   pars_max <- pars$info$max[i]
+  names(pars_min) <- names(pars_max) <- par_names
   
   pars$par2Rn <- function(x) log((x - pars_min) / (pars_max - x)) 
   pars$Rn2par <- function(x) (pars_min + pars_max * exp(x)) / (1 + exp(x))
@@ -67,6 +67,45 @@ gradient_LP <- function(theta, pars, filter, eps = 1e-4){
   
   list(LP = LP_theta,
        grad_LP = (LP_h-LP_theta)/eps)
+}
+
+gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4, n_threads = 1){
+  n <- length(theta)
+  theta_map <- cbind(rep(0, n), diag(eps, n)) +
+    matrix(rep(theta, n + 1), ncol = n + 1)
+
+  LP <- calculate_posterior_map_parallel(theta_map, filter, pars, n_threads)
+  
+  LP_theta <- LP[1]
+  LP_h <- LP[-1]
+  names(LP_h) <- names(theta)
+  
+  list(LP = LP_theta,
+       grad_LP = (LP_h-LP_theta)/eps)
+}
+
+#This function evaluate the posterior at multiple point in the parameter space
+calculate_posterior_map_parallel <- function(parameter_samples, filter, pars,
+                                             n_threads){
+  p <- apply(parameter_samples, 2, pars$Rn2par)
+  
+  model_pars <- apply(p, 2, pars$mcmc$model)
+  filter2 <- resize_filter(filter, length(model_pars), n_threads)
+  
+  LL_theta <- vapply(model_pars, filter$run, numeric(1))
+  LPr_theta <- apply(p, 2, pars$mcmc$prior)
+  
+  LL_theta + LPr_theta
+  
+}
+
+resize_filter <- function(filter, n_parameters, n_threads) {
+  inputs <- filter$inputs()
+  inputs$n_parameters <- n_parameters
+  inputs$n_threads <- n_threads
+  ## Note that this is not yet exported from mcstate, I'll look into
+  ## that for you later (mrc-3868 for my reference)
+  mcstate:::particle_filter_from_inputs(inputs)
 }
 
 
