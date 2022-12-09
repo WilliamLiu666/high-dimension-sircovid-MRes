@@ -28,6 +28,7 @@ simulate_calculate_vaccination_new <- function(state, pars, region) {
 #functions to pass parameter from Rn to par and vice-versa
 #This builds the function and use eval-parse to create it
 create_Rn2par <- function(pars){
+  
   #use this list as the reference for the list of names
   #the Rn vector is matching the order of this list
   par_names <- names(pars$mcmc$initial())
