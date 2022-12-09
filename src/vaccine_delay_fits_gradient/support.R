@@ -86,7 +86,7 @@ gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4, n_threads = 1)
   names(LP_h) <- names(theta)
   
   list(LP = LP_theta,
-       grad_LP = (LP_h-LP_theta)/eps)
+       grad_LP = (LP_h - LP_theta) / eps)
 }
 
 #This function evaluate the posterior at multiple point in the parameter space
