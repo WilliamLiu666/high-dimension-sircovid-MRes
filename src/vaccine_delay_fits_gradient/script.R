@@ -81,6 +81,15 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ## grad$LP gives the point estimate of the function
 ## grad$grad_LP gives the gradient estimate at theta
 ##
+## a parallel version can be run, first some additional setup (should only need
+## to be done once)
+## > n_threads <- spimalot::spim_control_cores()
+## > n_pars <- length(pars$mcmc$initial())
+## We use n_pars + 1 here as we calculate the log-likelihood at theta and
+## then also at a perturbation in each dimension
+## > filter2 <- resize_filter(filter, n_pars + 1, n_threads)
+## > grad <- gradient_LP_parallel(theta, pars, filter2)
+
 ## alternatively to get oonly a point estimate of the posterior we can run
 ## > RnPosterior(theta)
 

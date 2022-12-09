@@ -36,6 +36,7 @@ create_Rn2par <- function(pars){
   i <- match(par_names, pars$info$name)
   pars_min <- pars$info$min[i]
   pars_max <- pars$info$max[i]
+  names(pars_min) <- names(pars_max) <- par_names
   
   pars$par2Rn <- function(x) log((x - pars_min) / (pars_max - x)) 
   pars$Rn2par <- function(x) (pars_min + pars_max * exp(x)) / (1 + exp(x))
@@ -67,6 +68,52 @@ gradient_LP <- function(theta, pars, filter, eps = 1e-4){
   
   list(LP = LP_theta,
        grad_LP = (LP_h-LP_theta)/eps)
+}
+
+gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4){
+  n <- length(theta)
+  ## first column will be theta, the following n columns will correspond to
+  ## one parameter perturbed
+  theta_map <- cbind(rep(0, n), diag(eps, n)) +
+    matrix(rep(theta, n + 1), ncol = n + 1)
+
+  ## calculate posterior across all columns in theta_map
+  LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
+  
+  ## first value corresponds to theta
+  LP_theta <- LP[1]
+  ## the rest used to calculate gradient estimate
+  LP_h <- LP[-1]
+  names(LP_h) <- names(theta)
+  
+  list(LP = LP_theta,
+       grad_LP = (LP_h - LP_theta) / eps)
+}
+
+#This function evaluate the posterior at multiple point in the parameter space
+calculate_posterior_map_parallel <- function(parameter_samples, filter, pars){
+  ## transform from Rn to parameter space
+  p <- apply(parameter_samples, 2, pars$Rn2par)
+  
+  ## transform to odin parameters
+  model_pars <- apply(p, 2, pars$mcmc$model)
+  
+  ## calculate log-likelihoods in parallel
+  LL_theta <- filter$run(model_pars)
+  ## calculate log-priors
+  LPr_theta <- apply(p, 2, pars$mcmc$prior)
+  
+  LL_theta + LPr_theta
+  
+}
+
+resize_filter <- function(filter, n_parameters, n_threads) {
+  inputs <- filter$inputs()
+  inputs$n_parameters <- n_parameters
+  inputs$n_threads <- n_threads
+  ## Note that this is not yet exported from mcstate, I'll look into
+  ## that for you later (mrc-3868 for my reference)
+  mcstate:::particle_filter_from_inputs(inputs)
 }
 
 
