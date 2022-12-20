@@ -217,7 +217,7 @@ apply_assumptions <- function(baseline, assumptions) {
 ## This will get simplified considerably once we drop the previous
 ## two-stage fitting; that will be needed to bring in 3 and 4 stage
 ## fitting really.
-make_transform <- function(baseline) {
+make_transform <- function(baseline, date = NULL) {
   
   expected <- c("date", "model_type", "region", "restart_date", "epoch_dates",
                 "beta_date", "beta_names", "pillar2_age_bands",
@@ -414,15 +414,34 @@ make_transform <- function(baseline) {
       
     }
     
-    p1 <- stage_parameters("Alpha", 0)
-    p2 <- stage_parameters("Alpha", 2)
-    p3 <- stage_parameters("Alpha_Delta", 2)
+    if (is.null(date)) {
+      date <- baseline$date
+    }
     
-    epochs <- list(
-      mcstate::multistage_epoch(
-        epoch_dates[1], p2, sircovid::inflate_state_vacc_classes),
-      mcstate::multistage_epoch(
-        epoch_dates[2], p3, sircovid::inflate_state_strains))
-    mcstate::multistage_parameters(p1, epochs = epochs)
+    p1 <- stage_parameters("Alpha", 0)
+    if (date >= epoch_dates[1]) {
+      p2 <- stage_parameters("Alpha", 2)
+    }
+    if (date >= epoch_dates[2]) {
+      p3 <- stage_parameters("Alpha_Delta", 2)
+    }
+    
+    if (date < epoch_dates[1]) {
+      ret <- p1
+    } else if (date < epoch_dates[2]) {
+      epochs <- list(
+        mcstate::multistage_epoch(
+          epoch_dates[1], p2, sircovid::inflate_state_vacc_classes))
+      ret <- mcstate::multistage_parameters(p1, epochs = epochs)
+    } else {
+      epochs <- list(
+        mcstate::multistage_epoch(
+          epoch_dates[1], p2, sircovid::inflate_state_vacc_classes),
+        mcstate::multistage_epoch(
+          epoch_dates[2], p3, sircovid::inflate_state_strains))
+      ret <- mcstate::multistage_parameters(p1, epochs = epochs)
+    }
+    
+    ret
   }
 }

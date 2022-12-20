@@ -32,6 +32,7 @@ region <- spimalot::spim_check_region(region, FALSE)
 #mcmc - some sort of initialisation object built from the above to pass to the mcmc
 pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
+pars <- simplify_transform(pars, "parameters", date)
 
 ## Fix all unused parameters (those not impacting fitting before the date parameter)
 pars <- fix_unused_parameters(pars, date)
