@@ -1,4 +1,4 @@
-compute_severity <- function(pars, severity_data) {
+compute_severity <- function(pars, severity_data, date) {
   dt <- 0.25 # TODO: tidy this up
   expected <- c("mu_D", "mu_D_2", "p_G_D", "p_G_D_CHR", "p_H",
                 "p_H_2", "p_H_3", "p_H_D", "p_ICU", "p_ICU_2",
@@ -12,14 +12,17 @@ compute_severity <- function(pars, severity_data) {
                                         "2020-10-01", "2020-12-15",
                                         "2021-01-15", "2021-02-01"))
   mu_D_vec <- c(1, mu_D, mu_D, mu_D_2, mu_D_2, mu_D)
-  p_ICU_D_value <- p_ICU_D * mu_D_vec # ICU
-  p_H_D_value <- p_H_D * mu_D_vec # General ward (never triaged for ICU)
-  p_W_D_value <- p_W_D * mu_D_vec # Stepdown care (gen ward, after ICU)
+  p_D <- simplify_date(p_D_date, mu_D_vec, date)
+  
+  p_ICU_D_value <- p_ICU_D * p_D$value # ICU
+  p_H_D_value <- p_H_D * p_D$value # General ward (never triaged for ICU)
+  p_W_D_value <- p_W_D * p_D$value # Stepdown care (gen ward, after ICU)
 
   # b. Probability of ICU admission
   p_ICU_date <- sircovid::sircovid_date(c("2020-04-01", "2020-06-01"))
   p_ICU_value <- c(p_ICU, p_ICU_2)
-
+  p_ICU <- simplify_date(p_ICU_date, p_ICU_value, date)
+  
   # c. Probablity of hospitalisation
   p_H_date <- sircovid::sircovid_date(
     c("2020-10-01", "2020-12-15", "2021-02-15"))
@@ -38,20 +41,20 @@ compute_severity <- function(pars, severity_data) {
   severity <- sircovid::lancelot_parameters_severity(
     dt,
     severity_data,
-    p_H = list(value = p_H_value, date = p_H_date),
-    p_ICU = list(value = p_ICU_value, date = p_ICU_date),
-    p_ICU_D = list(value = p_ICU_D_value, date = p_D_date),
-    p_H_D = list(value = p_H_D_value, date = p_D_date),
-    p_W_D = list(value = p_W_D_value, date = p_D_date),
+    p_H = simplify_date(p_H_date, p_H_value, date),
+    p_ICU = simplify_date(p_ICU_date, p_ICU_value, date),
+    p_ICU_D = list(value = p_ICU_D_value, date = p_D$date),
+    p_H_D = list(value = p_H_D_value, date = p_D$date),
+    p_W_D = list(value = p_W_D_value, date = p_D$date),
     p_G_D = list(value = p_G_D),
     p_G_D_CHR = list(value = p_G_D_CHR),
-    p_star = list(value = p_star_value, date = p_star_date))
+    p_star = simplify_date(p_star_date, p_star_value, date))
 
   severity
 }
 
 
-compute_progression <- function(pars, progression_data) {
+compute_progression <- function(pars, progression_data, date) {
   dt <- 0.25 # TODO: make this flexible
   expected <- c("mu_gamma_H", "mu_gamma_H_2", "mu_gamma_H_3", "mu_gamma_H_4")
   stopifnot(all(expected %in% names(pars)))
@@ -76,6 +79,10 @@ compute_progression <- function(pars, progression_data) {
                                                "2021-09-01"))
   mu_gamma_H_value <- c(1, 1 / mu_gamma_H, 1 / mu_gamma_H_2, 1 / mu_gamma_H_3,
                         1 / mu_gamma_H_4)
+  
+  mu_gamma_H_simp <- simplify_date(mu_gamma_H_date, mu_gamma_H_value, date)
+  mu_gamma_H_date <- mu_gamma_H_simp$date
+  mu_gamma_H_value <- mu_gamma_H_simp$value
 
   gamma_E <- gammas$gamma_E
   gamma_ICU_pre <- gammas$gamma_ICU_pre
@@ -289,9 +296,13 @@ make_transform <- function(baseline, date = NULL) {
     stopifnot(setequal(expected, names(pars)))
     beta_value <- unname(pars[baseline$beta_names])
     pars <- as.list(pars) # using list access below
+    
+    if (is.null(date)) {
+      date <- baseline$date
+    }
 
-    progression <- compute_progression(pars, baseline$progression_data)
-    severity <- compute_severity(pars, baseline$severity_data)
+    progression <- compute_progression(pars, baseline$progression_data, date)
+    severity <- compute_severity(pars, baseline$severity_data, date)
     observation <- compute_observation(pars, baseline$model_type,
                                        baseline$pillar2_age_bands,
                                        baseline$region)
@@ -414,10 +425,6 @@ make_transform <- function(baseline, date = NULL) {
       
     }
     
-    if (is.null(date)) {
-      date <- baseline$date
-    }
-    
     p1 <- stage_parameters("Alpha", 0)
     if (date >= epoch_dates[1]) {
       p2 <- stage_parameters("Alpha", 2)
@@ -444,4 +451,19 @@ make_transform <- function(baseline, date = NULL) {
     
     ret
   }
+}
+
+simplify_date <- function(vec_date, vec_value, date) {
+  i <- min(sum(vec_date < sircovid::sircovid_date(date)) + 1, 
+           length(vec_date))
+  seq_i <- seq_len(i)
+  
+  vec_date <- vec_date[i]
+  if (length(vec_date) == 1) {
+    vec_date <- NULL
+  }
+  vec_value <- vec_value[i]
+  
+  list(value = vec_value,
+       date = vec_date)
 }
