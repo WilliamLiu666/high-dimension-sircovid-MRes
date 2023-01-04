@@ -458,11 +458,11 @@ simplify_date <- function(vec_date, vec_value, date) {
            length(vec_date))
   seq_i <- seq_len(i)
   
-  vec_date <- vec_date[i]
+  vec_date <- vec_date[seq_i]
   if (length(vec_date) == 1) {
     vec_date <- NULL
   }
-  vec_value <- vec_value[i]
+  vec_value <- vec_value[seq_i]
   
   list(value = vec_value,
        date = vec_date)

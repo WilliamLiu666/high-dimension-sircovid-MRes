@@ -181,6 +181,9 @@ simplify_transform <- function(pars, path, date) {
   
   pars$mcmc <- spimalot:::spim_pars_mcmc_single(pars$info, pars$prior, 
                                                 pars$proposal, pars$transform)
+  
+  pars$base$epoch_dates <-
+    pars$base$epoch_dates[pars$base$epoch_dates <= sircovid_date(date)]
 
   pars
 }
