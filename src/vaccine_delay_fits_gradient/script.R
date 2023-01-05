@@ -1,7 +1,7 @@
 source("global_util.R")
 
-version_check("sircovid", "0.14.9")
-version_check("spimalot", "0.8.16")
+version_check("sircovid", "0.14.10")
+version_check("spimalot", "0.8.19")
 
 ## Can change the end date for the fitting period here. These tasks were setup
 ## with an end date of 2021-09-13, but an earlier date can be used
