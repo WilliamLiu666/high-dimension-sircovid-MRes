@@ -1,8 +1,8 @@
 source("global_util.R")
 source("global_vaccine.R")
 
-version_check("sircovid", "0.14.10")
-version_check("spimalot", "0.8.19")
+version_check("sircovid", "0.14.11")
+version_check("spimalot", "0.8.20")
 
 
 date <- "2021-09-13"
