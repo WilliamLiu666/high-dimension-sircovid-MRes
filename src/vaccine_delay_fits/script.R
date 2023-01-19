@@ -3,7 +3,7 @@ source("global_util.R")
 version_check("sircovid", "0.14.7")
 version_check("spimalot", "0.8.15")
 
-date <- "2021-09-13"
+date <- "2020-09-13"
 model_type <- "BB"
 
 #Some data streams are unreliable for the last few days. Define how many days here.
@@ -11,8 +11,8 @@ trim_deaths <- 4
 trim_pillar2 <- 5
 
 ## MCMC control (only applies if short_run = FALSE)
-burnin <- 5000
-n_mcmc <- 15000
+burnin <- 5
+n_mcmc <- 1500
 chains <- 4
 kernel_scaling <- 0.2
 
@@ -39,7 +39,7 @@ restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
 
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
-  short_run, chains, deterministic, date_restart = restart_date,
+  FALSE, chains, deterministic, date_restart = restart_date,
   n_mcmc = n_mcmc, burnin = burnin,
   compiled_compare = deterministic, adaptive_proposal = deterministic)
 

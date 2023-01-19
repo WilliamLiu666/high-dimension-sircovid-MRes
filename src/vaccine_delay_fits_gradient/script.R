@@ -13,9 +13,9 @@ trim_deaths <- 4
 trim_pillar2 <- 5
 
 ## MCMC control (only applies if short_run = FALSE)
-burnin <- 500
-n_mcmc <- 1500
-chains <- 4
+burnin <- 8000
+n_mcmc <- 10000
+chains <- 1
 kernel_scaling <- 0.2
 
 #Checks current region is valid
@@ -49,7 +49,7 @@ restart_date <- NULL
 
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
-  short_run, chains, deterministic, date_restart = restart_date,
+  FALSE, chains, deterministic, date_restart = restart_date,
   n_mcmc = n_mcmc, burnin = burnin,
   compiled_compare = deterministic, adaptive_proposal = deterministic)
 
@@ -68,33 +68,91 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
                                          control$particle_filter,
                                          deterministic)
 
-## To run the model at this point, we just need to run:
-##
-## > filter$run(pars$mcmc$model(pars$mcmc$initial()))
-##
-## to go from the epi parameter space to |R^n the fitting parameter space
-## we can run
-## > theta <- pars$par2Rn(pars$mcmc$initial())
-##
-## to get the gradient we run
-## > grad <- gradient_LP(theta, pars, filter)
-## grad$LP gives the point estimate of the function
-## grad$grad_LP gives the gradient estimate at theta
-##
-## a parallel version can be run, first some additional setup (should only need
-## to be done once)
-## > n_threads <- spimalot::spim_control_cores()
-## > n_pars <- length(pars$mcmc$initial())
+
+filter$run(pars$mcmc$model(pars$mcmc$initial()))
+n_threads <- spimalot::spim_control_cores()
+n_pars <- length(pars$mcmc$initial())
 ## We use n_pars + 1 here as we calculate the log-likelihood at theta and
 ## then also at a perturbation in each dimension
-## > filter2 <- resize_filter(filter, n_pars + 1, n_threads)
-## > grad <- gradient_LP_parallel(theta, pars, filter2)
+filter2 <- resize_filter(filter, n_pars + 1, n_threads)
+# grad <- gradient_LP_parallel(theta, filter2, pars)
 
-## alternatively to get oonly a point estimate of the posterior we can run
-## > RnPosterior(theta)
-
-## This bit takes ages, of course
+## Using MCMC to find a better initial value.
 samples <- spimalot::spim_fit_run(pars, filter, control$pmcmc)
+theta <- samples$pars[1000,]
+theta <- as.vector(theta)
+theta <- pars$par2Rn(theta)
+
+## HMC parameters
+epsilon <- 0.0015
+L <- 1
+N <- 5001
+HMC_samples <- matrix(0,N,length(theta))
+HMC_samples[1,] <- theta
+library(MASS)
+M <- diag(1,length(theta))
+invM <- M
+
+## Run HMC with 5 blocks
+for (j in 1:5){
+  
+  ## HMC for N iterations
+  for (i in ((j-1)*N+2):(j*N+1)){
+    print(i)
+    HMC_samples[i,] <- HMC_parallel(RnPosterior, gradient_LP, epsilon, L, HMC_samples[i-1,], filter,filter2, pars, M, invM)
+  }
+  
+  #Update variance matrix
+  M <- cov(HMC_samples[((j-1)*N+2):(j*N+1),])
+  invM <- diag(diag(M),length((theta)))
+  M <- solve(invM)
+}
+
+
+## save the output
+write.csv(HMC_samples,file = sprintf('samples_%s_%s.csv',epsilon,L))
+
+pdf(sprintf('HMC_epsilon_%s_L_%s_noburnin.pdf',epsilon,L))
+par(mfrow=c(3,4))
+for (i in 1:6){
+  acf(HMC_samples[,i],main = sprintf('the %s th feature',i))
+  plot(HMC_samples[,i],main = sprintf('the %s th feature',i))
+}
+for (i in 7:12){
+  acf(HMC_samples[,i],main = sprintf('the %s th feature',i))
+  plot(HMC_samples[,i],main = sprintf('the %s th feature',i))
+}
+for (i in 13:18){
+  acf(HMC_samples[,i],main = sprintf('the %s th feature',i))
+  plot(HMC_samples[,i],main = sprintf('the %s th feature',i))
+}
+for (i in 19:24){
+  acf(HMC_samples[,i],main = sprintf('the %s th feature',i))
+  plot(HMC_samples[,i],main = sprintf('the %s th feature',i))
+}
+for (i in 25:28){
+  acf(HMC_samples[,i],main = sprintf('the %s th feature',i))
+  plot(HMC_samples[,i],main = sprintf('the %s th feature',i))
+}
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## This is the data set including series that we do not fit to, and
 ## with the full series of carehomes deaths.
