@@ -1,7 +1,7 @@
 source("global_util.R")
 
-version_check("sircovid", "0.14.9")
-version_check("spimalot", "0.8.16")
+version_check("sircovid", "0.14.11")
+version_check("spimalot", "0.8.21")
 
 ## Can change the end date for the fitting period here. These tasks were setup
 ## with an end date of 2021-09-13, but an earlier date can be used
@@ -32,6 +32,7 @@ region <- spimalot::spim_check_region(region, FALSE)
 #mcmc - some sort of initialisation object built from the above to pass to the mcmc
 pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
+pars <- simplify_transform(pars, "parameters", date)
 
 ## Fix all unused parameters (those not impacting fitting before the date parameter)
 pars <- fix_unused_parameters(pars, date)
