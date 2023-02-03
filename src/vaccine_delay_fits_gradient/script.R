@@ -112,8 +112,6 @@ data_inputs <- list(rtm = data_rtm,
 
 dat <- spimalot::spim_fit_process(samples, pars, data_inputs,
                                   control$particle_filter)
-dat$fit$simulate$n_doses <-
-simulate_calculate_vaccination_new(dat$fit$simulate$state, pars, region)
 
 dir.create("outputs", FALSE, TRUE)
 saveRDS(dat$fit, "outputs/fit.rds")
