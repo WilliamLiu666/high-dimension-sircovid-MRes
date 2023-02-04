@@ -86,40 +86,4 @@ for (j in 1:1){
 
 
 ## save the output
-write.csv(HMC_samples,file = sprintf('samples_%s_%s_acc4.csv',epsilon,L))
-
-
-covmat <- read_csv("covmat.csv")
-M <- as.matrix(covmat[,2:29])
-invM <- diag(diag(M),length((theta)))
-M <- solve(invM)
-
-## HMC parameters
-L <- 1
-N <- 1001
-ESS <- matrix(0,nrow = 6, ncol = 28)
-acc.list <- rep(0,6)
-epsilon <- 0.01
-
-for (j in 1:2){
-  entry <- (j*.01+2.89)*1e-7
-  invM[7,7] <- entry
-  M <- solve(invM)
-  HMC_samples <- matrix(0,N,length(theta))
-  HMC_samples[1,] <- theta
-  for (i in 2:N){
-    print(sprintf('%s th iter with 7th diagonal entry = %s .csv',i,entry))
-    HMC_samples[i,] <- HMC_parallel(RnPosterior, gradient_LP, epsilon, L, HMC_samples[i-1,], filter,filter2, pars, M, invM)
-  }
-  write.csv(HMC_samples,file = sprintf('samples_7th_entry_%s.csv',entry))
-  ESS[j,] <- effectiveSize(HMC_samples)
-  acc.list[j] <- acc_rate(HMC_samples)
-}
-
-# for (j in 1:11){
-#   entry <- (j*.1+2.4)*1e-7
-#   HMC_samples <- read_csv(sprintf('samples_7th_entry_%s.csv',entry))
-#   HMC_samples <- as.matrix(HMC_samples[,2:29])
-#   ESS[j,] <- effectiveSize(HMC_samples)
-#   acc.list[j] <- acc_rate(HMC_samples)
-# }
+write.csv(HMC_samples,file = sprintf('samples_%s_%s_acc.csv',epsilon,L))
