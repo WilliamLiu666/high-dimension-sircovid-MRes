@@ -8,6 +8,8 @@ orderly::orderly_run(
   parameters = list(deterministic = TRUE),
   use_draft = "newer")
 
+options(didehpc.cluster = "fi--didemrchnb",
+        didehpc.username = "wl5818")
 setwd(orderly::orderly_config()$root)
 packages <- c("sircovid", "orderly", "mcstate", "dust", "spimalot", "dplyr")
 src <- conan::conan_sources(NULL,
