@@ -3,7 +3,7 @@ source("global_util.R")
 version_check("sircovid", "0.14.7")
 version_check("spimalot", "0.8.15")
 
-date <- "2021-09-13"
+date <- "2020-09-13"
 model_type <- "BB"
 
 #Some data streams are unreliable for the last few days. Define how many days here.
@@ -31,7 +31,16 @@ region <- spimalot::spim_check_region(region, FALSE)
 pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
 
-restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
+pars <- simplify_transform(pars, "parameters", date)
+
+## Fix all unused parameters (those not impacting fitting before the date parameter)
+pars <- fix_unused_parameters(pars, date)
+
+#Create the conversions functions for the parameters in order to fit in |R^d
+#And attach them to the pars object
+pars <- create_Rn2par(pars)
+
+restart_date <- NULL
 
 ## This will probably want much more control, if we are to support
 ## using rrq etc to create a multinode job; some of that will depend a
@@ -40,7 +49,7 @@ restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
   short_run, chains, deterministic, date_restart = restart_date,
-  n_mcmc = n_mcmc, burnin = burnin,
+  n_mcmc = n_mcmc, burnin = burnin, rt = FALSE,
   compiled_compare = deterministic, adaptive_proposal = deterministic)
 
 
@@ -83,7 +92,6 @@ dat <- spimalot::spim_fit_process(samples, pars, data_inputs,
 
 dir.create("outputs", FALSE, TRUE)
 saveRDS(dat$fit, "outputs/fit.rds")
-saveRDS(dat$restart, "outputs/restart.rds")
 
 message("Creating plots")
 write_pdf(

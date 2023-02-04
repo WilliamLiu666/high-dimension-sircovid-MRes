@@ -51,7 +51,7 @@ restart_date <- NULL
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
   short_run, chains, deterministic, date_restart = restart_date,
-  n_mcmc = n_mcmc, burnin = burnin,
+  n_mcmc = n_mcmc, burnin = burnin, rt = FALSE,
   compiled_compare = deterministic, adaptive_proposal = deterministic)
 
 
@@ -112,12 +112,9 @@ data_inputs <- list(rtm = data_rtm,
 
 dat <- spimalot::spim_fit_process(samples, pars, data_inputs,
                                   control$particle_filter)
-dat$fit$simulate$n_doses <-
-simulate_calculate_vaccination_new(dat$fit$simulate$state, pars, region)
 
 dir.create("outputs", FALSE, TRUE)
 saveRDS(dat$fit, "outputs/fit.rds")
-saveRDS(dat$restart, "outputs/restart.rds")
 
 message("Creating plots")
 write_pdf(
