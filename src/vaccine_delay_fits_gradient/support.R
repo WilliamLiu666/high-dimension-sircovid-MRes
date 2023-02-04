@@ -1,4 +1,5 @@
-
+library(MASS)
+library(coda)
 simulate_calculate_vaccination_new <- function(state, pars, region) {
   n_groups <- sircovid:::lancelot_n_groups()
   
@@ -59,7 +60,7 @@ calculate_posterior_map <- function(parameter_samples, filter, pars){
 }
 
 #Calculate the gradient
-gradient_LP <- function(theta, pars, filter, eps = 1e-4){
+gradient_LP <- function(theta, filter, pars, eps = 1e-4){
   n <- length(theta)
   theta_h <- diag(eps,n) + matrix(rep(theta,n),ncol = n)
   
@@ -70,12 +71,11 @@ gradient_LP <- function(theta, pars, filter, eps = 1e-4){
        grad_LP = (LP_h-LP_theta)/eps)
 }
 
-gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4){
+gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
   n <- length(theta)
   ## first column will be theta, the following n columns will correspond to
   ## one parameter perturbed
-  theta_map <- cbind(rep(0, n), diag(eps, n)) +
-    matrix(rep(theta, n + 1), ncol = n + 1)
+  theta_map <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
 
   ## calculate posterior across all columns in theta_map
   LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
@@ -86,8 +86,20 @@ gradient_LP_parallel <- function(theta, pars, filter, eps = 1e-4){
   LP_h <- LP[-1]
   names(LP_h) <- names(theta)
   
+  # #one parameter perturbed
+  # theta_map <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+  #
+  # #calculate posterior across all columns in theta_map
+  # LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
+  #
+  # first value corresponds to theta
+  # LP_theta <- LP[1]
+  # #the rest used to calculate gradient estimate
+  # LP_h2 <- LP[-1]
+  # names(LP_h2) <- names(theta)
+  
   list(LP = LP_theta,
-       grad_LP = (LP_h - LP_theta) / eps)
+       grad_LP = (LP_h - LP_theta) / (eps))
 }
 
 #This function evaluate the posterior at multiple point in the parameter space
@@ -171,6 +183,107 @@ fix_unused_parameters <- function(pars, date) {
   pars
 }
 
+
+HMC_parallel <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter,filter2, pars, M, invM)
+{
+  q = current_q
+  
+  p = mvrnorm(1,rep(0,length(q)),M) # independent standard normal variates
+  current_p = p
+  
+  # Make a half step for momentum at the beginning
+  p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP / 2
+  
+  # Alternate full steps for position and momentum
+  for (i in 1:L)
+  {
+    # Make a full step for the position
+    q = q + epsilon * invM%*%p
+    # Make a full step for the momentum, except at end of trajectory
+    if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP
+  }
+  
+  # Make a half step for momentum at the end.
+  p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP / 2
+  
+  # Negate momentum at end of trajectory to make the proposal symmetric
+  p = -p
+  
+  # Evaluate potential and kinetic energies at start and end of trajectory
+  current_U = -RnPosterior(current_q, filter, pars)
+  current_K = current_p %*% invM %*% current_p /2
+  proposed_U = -RnPosterior(q, filter, pars)
+  proposed_K = p %*% invM %*% p /2
+  
+  # Accept or reject the state at end of trajectory, returning either
+  # the position at the end of the trajectory or the initial position
+  if (runif(1) < exp(current_U-proposed_U+current_K-proposed_K))
+  {
+    return (q) # accept
+  }
+  else
+  {
+    return (current_q) # reject
+  }
+  
+}
+
+HMC <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter, pars)
+{
+  q = current_q
+  
+  p = rnorm(length(q),0,1) # independent standard normal variates
+  current_p = p
+  
+  # Make a half step for momentum at the beginning
+  p = p - epsilon * -gradient_LP(q, filter, pars)$grad_LP / 2
+  
+  # Alternate full steps for position and momentum
+  for (i in 1:L)
+  {
+    # Make a full step for the position
+    q = q + epsilon * p
+    # Make a full step for the momentum, except at end of trajectory
+    if (i!=L) p = p - epsilon * -gradient_LP(q, filter, pars)$grad_LP
+  }
+  
+  # Make a half step for momentum at the end.
+  p = p - epsilon * -gradient_LP(q, filter, pars)$grad_LP / 2
+  
+  # Negate momentum at end of trajectory to make the proposal symmetric
+  p = -p
+  
+  # Evaluate potential and kinetic energies at start and end of trajectory
+  current_U = -RnPosterior(current_q, filter, pars)
+  current_K = sum(current_p^2) / 2
+  proposed_U = -RnPosterior(q, filter, pars)
+  proposed_K = sum(p^2) / 2
+  
+  # Accept or reject the state at end of trajectory, returning either
+  # the position at the end of the trajectory or the initial position
+  if (runif(1) < exp(current_U-proposed_U+current_K-proposed_K))
+  {
+    return (q) # accept
+  }
+  else
+  {
+    return (current_q) # reject
+  }
+  
+}
+
+acc_rate <- function(x){
+  num <- dim(x)[1]-1
+  count <- 0
+  for (i in 1:num){
+    if (x[i+1]==x[i]){
+      count<-count+1
+    }
+  }
+  return((num-count)/num)
+}
+
+
 simplify_transform <- function(pars, path, date) {
   
   e <- new.env()
@@ -187,3 +300,4 @@ simplify_transform <- function(pars, path, date) {
 
   pars
 }
+

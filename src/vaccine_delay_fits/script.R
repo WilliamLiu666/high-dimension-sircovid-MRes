@@ -11,8 +11,8 @@ trim_deaths <- 4
 trim_pillar2 <- 5
 
 ## MCMC control (only applies if short_run = FALSE)
-burnin <- 5000
-n_mcmc <- 15000
+burnin <- 5
+n_mcmc <- 1500
 chains <- 4
 kernel_scaling <- 0.2
 
@@ -48,8 +48,8 @@ restart_date <- NULL
 
 #This sets up a lot of pmcmc controls, checks iterations are compatible etc.
 control <- spimalot::spim_control(
-  short_run, chains, deterministic, date_restart = restart_date,
-  n_mcmc = n_mcmc, burnin = burnin, rt = FALSE,
+  FALSE, chains, deterministic, date_restart = restart_date,
+  n_mcmc = n_mcmc, burnin = burnin,
   compiled_compare = deterministic, adaptive_proposal = deterministic)
 
 

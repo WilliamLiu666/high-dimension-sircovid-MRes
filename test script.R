@@ -11,9 +11,14 @@ orderly::orderly_run(
   parameters = list(deterministic = TRUE),
   use_draft = "newer")
 
-orderly::orderly_develop_start('vaccine_delay_fits',
+orderly::orderly_develop_start('vaccine_delay_fits_gradient',
                      parameters = list(region = "london",
                                        short_run = TRUE,
                                        deterministic = TRUE),
                      use_draft = "newer")
 
+orderly::orderly_develop_start('vaccine_delay_fits',
+                               parameters = list(region = "london",
+                                                 short_run = TRUE,
+                                                 deterministic = TRUE),
+                               use_draft = "newer")
