@@ -31,7 +31,16 @@ region <- spimalot::spim_check_region(region, FALSE)
 pars <- spimalot::spim_fit_pars_load("parameters", region, "central",
                                      kernel_scaling)
 
-restart_date <- readRDS("parameters/base.rds")[[region[[1]]]]$restart_date
+pars <- simplify_transform(pars, "parameters", date)
+
+## Fix all unused parameters (those not impacting fitting before the date parameter)
+pars <- fix_unused_parameters(pars, date)
+
+#Create the conversions functions for the parameters in order to fit in |R^d
+#And attach them to the pars object
+pars <- create_Rn2par(pars)
+
+restart_date <- NULL
 
 ## This will probably want much more control, if we are to support
 ## using rrq etc to create a multinode job; some of that will depend a
@@ -83,7 +92,6 @@ dat <- spimalot::spim_fit_process(samples, pars, data_inputs,
 
 dir.create("outputs", FALSE, TRUE)
 saveRDS(dat$fit, "outputs/fit.rds")
-saveRDS(dat$restart, "outputs/restart.rds")
 
 message("Creating plots")
 write_pdf(

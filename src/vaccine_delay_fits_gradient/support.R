@@ -183,6 +183,7 @@ fix_unused_parameters <- function(pars, date) {
   pars
 }
 
+
 HMC_parallel <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter,filter2, pars, M, invM)
 {
   q = current_q
@@ -280,5 +281,23 @@ acc_rate <- function(x){
     }
   }
   return((num-count)/num)
+}
+
+
+simplify_transform <- function(pars, path, date) {
+  
+  e <- new.env()
+  sys.source(file.path(path, "transform.R"), e)
+  
+  make_transform <- e$make_transform
+  pars$transform <- make_transform(pars$base, date)
+  
+  pars$mcmc <- spimalot:::spim_pars_mcmc_single(pars$info, pars$prior, 
+                                                pars$proposal, pars$transform)
+  
+  pars$base$epoch_dates <-
+    pars$base$epoch_dates[pars$base$epoch_dates <= sircovid_date(date)]
+
+  pars
 }
 
