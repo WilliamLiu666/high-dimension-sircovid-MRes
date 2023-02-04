@@ -1,3 +1,5 @@
+library(MASS)
+library(coda)
 simulate_calculate_vaccination_new <- function(state, pars, region) {
   n_groups <- sircovid:::lancelot_n_groups()
   
@@ -73,8 +75,7 @@ gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
   n <- length(theta)
   ## first column will be theta, the following n columns will correspond to
   ## one parameter perturbed
-  theta_map <- cbind(rep(0, n), diag(eps, n)) +
-    matrix(rep(theta, n + 1), ncol = n + 1)
+  theta_map <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
 
   ## calculate posterior across all columns in theta_map
   LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
@@ -85,8 +86,20 @@ gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
   LP_h <- LP[-1]
   names(LP_h) <- names(theta)
   
+  # #one parameter perturbed
+  # theta_map <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+  #
+  # #calculate posterior across all columns in theta_map
+  # LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
+  #
+  # first value corresponds to theta
+  # LP_theta <- LP[1]
+  # #the rest used to calculate gradient estimate
+  # LP_h2 <- LP[-1]
+  # names(LP_h2) <- names(theta)
+  
   list(LP = LP_theta,
-       grad_LP = (LP_h - LP_theta) / eps)
+       grad_LP = (LP_h - LP_theta) / (eps))
 }
 
 #This function evaluate the posterior at multiple point in the parameter space
