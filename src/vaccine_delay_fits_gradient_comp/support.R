@@ -185,8 +185,7 @@ fix_unused_parameters <- function(pars, date) {
 }
 
 
-HMC_parallel <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter,filter2, pars, M, invM)
-{
+HMC_parallel <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter,filter2, pars, M, invM){
   q = current_q
   
   p = mvrnorm(1,rep(0,length(q)),M) # independent standard normal variates
