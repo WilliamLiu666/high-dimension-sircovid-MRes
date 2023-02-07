@@ -85,25 +85,45 @@ M <- solve(invM)
 
 epsilon <- 0.22
 L <- 1
-N <- 5
+N <- 1000
 N_block <- 1
 HMC_samples <- matrix(0,N*N_block+1,length(theta))
 HMC_samples[1,] <- theta
+compare <- 'b1'
 
+if (compare == TRUE){
+  acc.list <- matrix(0,nrow =N*N_block, ncol = 6)
+}else{
+  acc.list <- rep(0,N*N_block)
+}
 
 for (j in 1:N_block){
 
   ## HMC for N iterations
   for (i in 1:N){
     ind <- (j-1)*N+i+1
-    print(ind)
-    HMC_samples[ind,] <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM)
+    if (ind%%10 == 0){
+      print(ind)
+    }
+    result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
+    HMC_samples[ind,] <- result$q
+    if (compare == TRUE){
+      acc.list[ind-1,] <- result$acc.list
+    }
+    else{
+      acc.list[ind-1] <- result$acc.list
+    }
   }
 }
+
+print(acc_rate(HMC_samples))
+effectiveSize(HMC_samples)
+
 
 message("Saving results")
 dir.create("outputs", FALSE, TRUE)
 write.csv(HMC_samples,'outputs/samples.csv')
+write.csv(acc.list,'outputs/acceptance_rate.csv')
 
 message("Saving plots")
 pdf('outputs/plot.pdf')
@@ -129,5 +149,3 @@ for (i in 25:28){
   plot(HMC_samples[,i],main = sprintf('the %s th dimension',i))
 }
 dev.off()
-
-effectiveSize(HMC_samples)

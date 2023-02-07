@@ -25,6 +25,7 @@ artefacts:
       description: HMC results for combined task
       filenames:
         - outputs/samples.csv
+        - outputs/acceptance_rate.csv
 
 sources:
   - data.R
