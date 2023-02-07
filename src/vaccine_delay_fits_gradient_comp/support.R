@@ -57,33 +57,58 @@ RnPosterior <- function(theta, filter, pars){
 #Calculate the gradient
 gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
   n <- length(theta)
-  ## first column will be theta, the following n columns will correspond to
-  ## one parameter perturbed
-  theta_map <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+  
+  
+  
+  ## Forward step with 1 unit
+  ## first column will be theta, the following n columns will correspond to one parameter perturbed
+  theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
 
   ## calculate posterior across all columns in theta_map
-  LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
+  LP.f1 <- calculate_posterior_map_parallel(theta_map.f1, filter, pars)
   
-  ## first value corresponds to theta
-  LP_theta <- LP[1]
   ## the rest used to calculate gradient estimate
-  LP_h <- LP[-1]
-  names(LP_h) <- names(theta)
+  LP_h.f1 <- LP.f1[-1]
   
-  # #one parameter perturbed
-  # theta_map <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
-  #
-  # #calculate posterior across all columns in theta_map
-  # LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
-  #
-  # first value corresponds to theta
-  # LP_theta <- LP[1]
-  # #the rest used to calculate gradient estimate
-  # LP_h2 <- LP[-1]
-  # names(LP_h2) <- names(theta)
   
-  list(LP = LP_theta,
-       grad_LP = (LP_h - LP_theta) / (eps))
+  
+  ## Forward step with 2 unit
+  ## first column will be theta, the following n columns will correspond to one parameter perturbed
+  theta_map.f2 <- cbind(rep(0, n), diag(eps*2, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+  
+  ## calculate posterior across all columns in theta_map
+  LP.f2 <- calculate_posterior_map_parallel(theta_map.f2, filter, pars)
+  
+  ## the rest used to calculate gradient estimate
+  LP_h.f2 <- LP.f2[-1]
+  
+  
+  
+  ## Backward step with 1 unit
+  ## first column will be theta, the following n columns will correspond to one parameter perturbed
+  theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+  
+  ## calculate posterior across all columns in theta_map
+  LP.b1 <- calculate_posterior_map_parallel(theta_map.b1, filter, pars)
+  
+  ## the rest used to calculate gradient estimate
+  LP_h.b1 <- LP.b1[-1]
+  
+  
+  
+  ## Backward step with 2 unit
+  ## first column will be theta, the following n columns will correspond to one parameter perturbed
+  theta_map.b2 <- cbind(rep(0, n), diag(-eps*2, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+  
+  ## calculate posterior across all columns in theta_map
+  LP.b2 <- calculate_posterior_map_parallel(theta_map.b2, filter, pars)
+  
+  ## the rest used to calculate gradient estimate
+  LP_h.b2 <- LP.b2[-1]
+  
+  LP_0 <- LP_h.b2[1]
+  
+  result <- c((-LP.b1/2+LP.f1/2)/eps , (LP.b2/12-LP.b1*2/3+LP.f1*2/3-LP.f2/12)/eps , (-LP_0+LP.f1)/eps , (-LP_0*3/2+2*LP.f1-LP.f2/2)/eps ,  (-LP.b1+LP_0)/eps , (LP.b2/2-LP.b1*2 +LP_0*3/2)/eps   )   
 }
 
 #This function evaluate the posterior at multiple point in the parameter space
@@ -174,29 +199,35 @@ HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current
   p = mvrnorm(1,rep(0,length(q)),M) # independent standard normal variates
   current_p = p
   
-  # Make a half step for momentum at the beginning
-  p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP / 2
-  
-  # Alternate full steps for position and momentum
-  for (i in 1:L)
-  {
-    # Make a full step for the position
-    q = q + epsilon * invM%*%p
-    # Make a full step for the momentum, except at end of trajectory
-    if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP
+  # Test on different functions
+  for (g in 1:6){
+    # Make a half step for momentum at the beginning
+    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)[g] / 2
+    
+    # Alternate full steps for position and momentum
+    for (i in 1:L)
+    {
+      # Make a full step for the position
+      q = q + epsilon * invM%*%p
+      # Make a full step for the momentum, except at end of trajectory
+      if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)[g]
+    }
+    
+    # Make a half step for momentum at the end.
+    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)[g] / 2
+    
+    # Negate momentum at end of trajectory to make the proposal symmetric
+    p = -p
+    
+    # Evaluate potential and kinetic energies at start and end of trajectory
+    current_U = -RnPosterior(current_q, filter, pars)
+    current_K = current_p %*% invM %*% current_p /2
+    proposed_U = -RnPosterior(q, filter, pars)
+    proposed_K = p %*% invM %*% p /2
+    
+    acc.list[g] <- exp(current_U-proposed_U+current_K-proposed_K)
   }
   
-  # Make a half step for momentum at the end.
-  p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP / 2
-  
-  # Negate momentum at end of trajectory to make the proposal symmetric
-  p = -p
-  
-  # Evaluate potential and kinetic energies at start and end of trajectory
-  current_U = -RnPosterior(current_q, filter, pars)
-  current_K = current_p %*% invM %*% current_p /2
-  proposed_U = -RnPosterior(q, filter, pars)
-  proposed_K = p %*% invM %*% p /2
   
   # Accept or reject the state at end of trajectory, returning either
   # the position at the end of the trajectory or the initial position
