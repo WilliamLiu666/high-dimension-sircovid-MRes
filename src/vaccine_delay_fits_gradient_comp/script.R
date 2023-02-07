@@ -77,7 +77,6 @@ n_pars <- length(pars$mcmc$initial())
 filter2 <- resize_filter(filter, n_pars + 1, n_threads)
 
 ## load parameters
-getwd()
 theta <- read_csv("theta.csv")
 theta <- as.array(theta$x)
 invM <- read.csv("invM.csv")

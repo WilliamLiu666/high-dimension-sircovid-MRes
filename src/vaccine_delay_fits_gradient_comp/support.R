@@ -106,9 +106,16 @@ gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
   ## the rest used to calculate gradient estimate
   LP_h.b2 <- LP.b2[-1]
   
-  LP_0 <- LP_h.b2[1]
+  LP_0 <- LP.b2[1]
+  result <- matrix(0,nrow = 6,ncol = 28)
+  result[1,] <- (-LP_h.b1/2+LP_h.f1/2)/eps
+  result[2,] <- (LP_h.b2/12-LP_h.b1*2/3+LP_h.f1*2/3-LP_h.f2/12)/eps
+  result[3,] <- (-LP_0+LP_h.f1)/eps
+  result[4,] <- (-LP_0*3/2+2*LP_h.f1-LP_h.f2/2)/eps
+  result[5,] <- (-LP_h.b1+LP_0)/eps
+  result[6,] <- (LP_h.b2/2-LP_h.b1*2 +LP_0*3/2)/eps
   
-  result <- c((-LP.b1/2+LP.f1/2)/eps , (LP.b2/12-LP.b1*2/3+LP.f1*2/3-LP.f2/12)/eps , (-LP_0+LP.f1)/eps , (-LP_0*3/2+2*LP.f1-LP.f2/2)/eps ,  (-LP.b1+LP_0)/eps , (LP.b2/2-LP.b1*2 +LP_0*3/2)/eps   )   
+  return(result)
 }
 
 #This function evaluate the posterior at multiple point in the parameter space
