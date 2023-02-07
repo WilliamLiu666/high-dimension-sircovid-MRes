@@ -18,17 +18,21 @@ artefacts:
 # required for restart fit.
 
   - staticgraph:
-      description: pMCMC trace plots
+      description: HMC trace plots
       filenames:
-        - outputs/pmcmc_traceplots.pdf
+        - outputs/plot.pdf
   - data:
-      description: PMCMC results for combined task
+      description: HMC results for combined task
       filenames:
-        - outputs/fit.rds
+        - outputs/samples.csv
 
 sources:
   - data.R
   - support.R
+
+resources:
+  - theta.csv
+  - invM.csv
 
 global_resources:
   global_util.R: rtm_inference/util_new.R

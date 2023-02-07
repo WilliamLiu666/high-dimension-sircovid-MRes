@@ -1,5 +1,6 @@
 library(MASS)
 library(coda)
+library(readr)
 simulate_calculate_vaccination_new <- function(state, pars, region) {
   n_groups <- sircovid:::lancelot_n_groups()
   
