@@ -1,4 +1,4 @@
-compute_severity <- function(pars, severity_data, date) {
+compute_severity <- function(pars, severity_data) {
   dt <- 0.25 # TODO: tidy this up
   expected <- c("mu_D", "mu_D_2", "p_G_D", "p_G_D_CHR", "p_H",
                 "p_H_2", "p_H_3", "p_H_D", "p_ICU", "p_ICU_2",
@@ -12,17 +12,14 @@ compute_severity <- function(pars, severity_data, date) {
                                         "2020-10-01", "2020-12-15",
                                         "2021-01-15", "2021-02-01"))
   mu_D_vec <- c(1, mu_D, mu_D, mu_D_2, mu_D_2, mu_D)
-  p_D <- simplify_date(p_D_date, mu_D_vec, date)
-  
-  p_ICU_D_value <- p_ICU_D * p_D$value # ICU
-  p_H_D_value <- p_H_D * p_D$value # General ward (never triaged for ICU)
-  p_W_D_value <- p_W_D * p_D$value # Stepdown care (gen ward, after ICU)
+  p_ICU_D_value <- p_ICU_D * mu_D_vec # ICU
+  p_H_D_value <- p_H_D * mu_D_vec # General ward (never triaged for ICU)
+  p_W_D_value <- p_W_D * mu_D_vec # Stepdown care (gen ward, after ICU)
 
   # b. Probability of ICU admission
   p_ICU_date <- sircovid::sircovid_date(c("2020-04-01", "2020-06-01"))
   p_ICU_value <- c(p_ICU, p_ICU_2)
-  p_ICU <- simplify_date(p_ICU_date, p_ICU_value, date)
-  
+
   # c. Probablity of hospitalisation
   p_H_date <- sircovid::sircovid_date(
     c("2020-10-01", "2020-12-15", "2021-02-15"))
@@ -41,20 +38,20 @@ compute_severity <- function(pars, severity_data, date) {
   severity <- sircovid::lancelot_parameters_severity(
     dt,
     severity_data,
-    p_H = simplify_date(p_H_date, p_H_value, date),
-    p_ICU = simplify_date(p_ICU_date, p_ICU_value, date),
-    p_ICU_D = list(value = p_ICU_D_value, date = p_D$date),
-    p_H_D = list(value = p_H_D_value, date = p_D$date),
-    p_W_D = list(value = p_W_D_value, date = p_D$date),
+    p_H = list(value = p_H_value, date = p_H_date),
+    p_ICU = list(value = p_ICU_value, date = p_ICU_date),
+    p_ICU_D = list(value = p_ICU_D_value, date = p_D_date),
+    p_H_D = list(value = p_H_D_value, date = p_D_date),
+    p_W_D = list(value = p_W_D_value, date = p_D_date),
     p_G_D = list(value = p_G_D),
     p_G_D_CHR = list(value = p_G_D_CHR),
-    p_star = simplify_date(p_star_date, p_star_value, date))
+    p_star = list(value = p_star_value, date = p_star_date))
 
   severity
 }
 
 
-compute_progression <- function(pars, progression_data, date) {
+compute_progression <- function(pars, progression_data) {
   dt <- 0.25 # TODO: make this flexible
   expected <- c("mu_gamma_H", "mu_gamma_H_2", "mu_gamma_H_3", "mu_gamma_H_4")
   stopifnot(all(expected %in% names(pars)))
@@ -79,10 +76,6 @@ compute_progression <- function(pars, progression_data, date) {
                                                "2021-09-01"))
   mu_gamma_H_value <- c(1, 1 / mu_gamma_H, 1 / mu_gamma_H_2, 1 / mu_gamma_H_3,
                         1 / mu_gamma_H_4)
-  
-  mu_gamma_H_simp <- simplify_date(mu_gamma_H_date, mu_gamma_H_value, date)
-  mu_gamma_H_date <- mu_gamma_H_simp$date
-  mu_gamma_H_value <- mu_gamma_H_simp$value
 
   gamma_E <- gammas$gamma_E
   gamma_ICU_pre <- gammas$gamma_ICU_pre
@@ -97,9 +90,6 @@ compute_progression <- function(pars, progression_data, date) {
   # Time to diagnosis if admitted without test
   gamma_U_value <- 1 / 3
 
-  gamma_PCR_pre_value <- 0.1922243
-  gamma_PCR_pos_value <- 0.083
-  
   progression <- sircovid::lancelot_parameters_progression(
     dt,
     gamma_E = list(value = gamma_E),
@@ -111,10 +101,7 @@ compute_progression <- function(pars, progression_data, date) {
     gamma_ICU_W_R = list(value = gamma_ICU_W_R),
     gamma_W_D = list(value = gamma_W_D_value, date = mu_gamma_H_date),
     gamma_W_R = list(value = gamma_W_R_value, date = mu_gamma_H_date),
-    gamma_U = list(value = gamma_U_value),
-    gamma_PCR_pre = list(value = gamma_PCR_pre_value),
-    gamma_PCR_pos = list(value = gamma_PCR_pos_value)
-    )
+    gamma_U = list(value = gamma_U_value))
   progression[k_parameters$parameter] <- k_parameters$value
 
   ## These could possibly be moved to the sircovid as defaults
@@ -123,7 +110,9 @@ compute_progression <- function(pars, progression_data, date) {
   progression$k_sero_pre_2 <- 1
   progression$gamma_sero_pre_2 <- 1 / 13
   progression$k_PCR_pre <- 1
+  progression$gamma_PCR_pre <- 0.1922243
   progression$k_PCR_pos <- 1
+  progression$gamma_PCR_pos <- 0.083
   progression$k_sero_pos_1 <- 1
   progression$gamma_sero_pos_1 <- 1 / 200
   progression$k_sero_pos_2 <- 1
@@ -224,7 +213,7 @@ apply_assumptions <- function(baseline, assumptions) {
 ## This will get simplified considerably once we drop the previous
 ## two-stage fitting; that will be needed to bring in 3 and 4 stage
 ## fitting really.
-make_transform <- function(baseline, date = NULL) {
+make_transform <- function(baseline) {
   
   expected <- c("date", "model_type", "region", "restart_date", "epoch_dates",
                 "beta_date", "beta_names", "pillar2_age_bands",
@@ -296,13 +285,9 @@ make_transform <- function(baseline, date = NULL) {
     stopifnot(setequal(expected, names(pars)))
     beta_value <- unname(pars[baseline$beta_names])
     pars <- as.list(pars) # using list access below
-    
-    if (is.null(date)) {
-      date <- baseline$date
-    }
 
-    progression <- compute_progression(pars, baseline$progression_data, date)
-    severity <- compute_severity(pars, baseline$severity_data, date)
+    progression <- compute_progression(pars, baseline$progression_data)
+    severity <- compute_severity(pars, baseline$severity_data)
     observation <- compute_observation(pars, baseline$model_type,
                                        baseline$pillar2_age_bands,
                                        baseline$region)
@@ -426,44 +411,14 @@ make_transform <- function(baseline, date = NULL) {
     }
     
     p1 <- stage_parameters("Alpha", 0)
-    if (date >= epoch_dates[1]) {
-      p2 <- stage_parameters("Alpha", 2)
-    }
-    if (date >= epoch_dates[2]) {
-      p3 <- stage_parameters("Alpha_Delta", 2)
-    }
+    p2 <- stage_parameters("Alpha", 2)
+    p3 <- stage_parameters("Alpha_Delta", 2)
     
-    if (date < epoch_dates[1]) {
-      ret <- p1
-    } else if (date < epoch_dates[2]) {
-      epochs <- list(
-        mcstate::multistage_epoch(
-          epoch_dates[1], p2, sircovid::inflate_state_vacc_classes))
-      ret <- mcstate::multistage_parameters(p1, epochs = epochs)
-    } else {
-      epochs <- list(
-        mcstate::multistage_epoch(
-          epoch_dates[1], p2, sircovid::inflate_state_vacc_classes),
-        mcstate::multistage_epoch(
-          epoch_dates[2], p3, sircovid::inflate_state_strains))
-      ret <- mcstate::multistage_parameters(p1, epochs = epochs)
-    }
-    
-    ret
+    epochs <- list(
+      mcstate::multistage_epoch(
+        epoch_dates[1], p2, sircovid::inflate_state_vacc_classes),
+      mcstate::multistage_epoch(
+        epoch_dates[2], p3, sircovid::inflate_state_strains))
+    mcstate::multistage_parameters(p1, epochs = epochs)
   }
-}
-
-simplify_date <- function(vec_date, vec_value, date) {
-  i <- min(sum(vec_date < sircovid::sircovid_date(date)) + 1, 
-           length(vec_date))
-  seq_i <- seq_len(i)
-  
-  vec_date <- vec_date[seq_i]
-  if (length(vec_date) == 1) {
-    vec_date <- NULL
-  }
-  vec_value <- vec_value[seq_i]
-  
-  list(value = vec_value,
-       date = vec_date)
 }

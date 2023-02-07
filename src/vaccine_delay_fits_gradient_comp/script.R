@@ -86,7 +86,7 @@ M <- solve(invM)
 
 epsilon <- 0.22
 L <- 1
-N <- 1000
+N <- 5
 N_block <- 1
 HMC_samples <- matrix(0,N*N_block+1,length(theta))
 HMC_samples[1,] <- theta
@@ -98,7 +98,7 @@ for (j in 1:N_block){
   for (i in 1:N){
     ind <- (j-1)*N+i+1
     print(ind)
-    HMC_samples[ind,] <- HMC_parallel(RnPosterior, gradient_LP, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM)
+    HMC_samples[ind,] <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM)
   }
 }
 

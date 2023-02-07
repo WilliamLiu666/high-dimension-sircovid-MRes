@@ -54,24 +54,7 @@ RnPosterior <- function(theta, filter, pars){
   return(LL_theta+LP_theta)
 }
 
-#This function evaluate the posterior at multiple point in the parameter space
-calculate_posterior_map <- function(parameter_samples, filter, pars){
-  apply(parameter_samples, 2, function(x)
-    RnPosterior(x, filter, pars))
-}
-
 #Calculate the gradient
-gradient_LP <- function(theta, filter, pars, eps = 1e-4){
-  n <- length(theta)
-  theta_h <- diag(eps,n) + matrix(rep(theta,n),ncol = n)
-  
-  LP_theta <- RnPosterior(theta, filter, pars)
-  LP_h <- calculate_posterior_map(theta_h, filter, pars)
-  
-  list(LP = LP_theta,
-       grad_LP = (LP_h-LP_theta)/eps)
-}
-
 gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
   n <- length(theta)
   ## first column will be theta, the following n columns will correspond to
@@ -185,7 +168,7 @@ fix_unused_parameters <- function(pars, date) {
 }
 
 
-HMC_parallel <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter,filter2, pars, M, invM){
+HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current_q, filter,filter2, pars, M, invM){
   q = current_q
   
   p = mvrnorm(1,rep(0,length(q)),M) # independent standard normal variates
