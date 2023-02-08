@@ -79,46 +79,32 @@ filter2 <- resize_filter(filter, n_pars + 1, n_threads)
 ## load parameters
 theta <- read_csv("theta.csv")
 theta <- as.array(theta$x)
-invM <- read.csv("invM.csv")
-invM <- as.matrix(invM[,2:29])
-M <- solve(invM)
 
-
-HMC_samples <- matrix(0,N+1,length(theta))
-HMC_samples[1,] <- theta
-
-if (compare == TRUE){
-  acc.list <- matrix(0,nrow =N, ncol = 6)
-}else{
-  acc.list <- rep(0,N)
+grad <- matrix(0,nrow = 6, ncol = 13)
+axis.x <- rep(0,13)
+for (i in 2:14){
+  eps = 10^-i
+  axis.x[i-1] <- eps
+  grad[,i] <- gradient_LP_parallel(theta,filter2,pars,compare= TRUE, eps = eps)
 }
 
-
-## HMC for N iterations
-for (i in 1:N){
-  ind <- i+1
-  if (ind%%10 == 0){
-    print(ind)
-  }
-  result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
-  HMC_samples[ind,] <- result$q
-  if (compare == TRUE){
-    acc.list[ind-1,] <- result$acc.list
-  }
-  else{
-    acc.list[ind-1] <- result$acc.list
-  }
-}
-
-
-print(acc_rate(HMC_samples))
-effectiveSize(HMC_samples)
+df <- data.frame(c1 <- grad[1,],c2 <- grad[2,],f1 <- grad[3,],f2 <- grad[4,],b1 <- grad[5,],b2 <- grad[6,],axis.x <- axis.x)
 
 
 message("Saving results")
 dir.create("outputs", FALSE, TRUE)
-write.csv(HMC_samples,'outputs/samples.csv')
-write.csv(acc.list,'outputs/acceptance_rate.csv')
+write.csv(grad,'outputs/gradient.csv')
+
 
 message("Saving plots")
-save_plot(HMC_samples,'outputs/plot.pdf')
+library(ggplot2)
+p <- ggplot(df,aes(x = axis.x))+geom_line(aes(y = c1,color = "c1"))+geom_line(aes(y = c2,color = "c2"))+
+  geom_line(aes(y = f1,color = "f1"))+geom_line(aes(y = f2,color = "f2"))+
+  geom_line(aes(y = b1,color = "b1"))+geom_line(aes(y = b2,color = "b2"))+
+  scale_x_continuous(trans = 'log10')+labs(x = "Year",
+                                           y = "(%)",
+                                           color = "Legend")
+pdf('outputs/gradient_plot.pdf')
+p
+dev.off()
+

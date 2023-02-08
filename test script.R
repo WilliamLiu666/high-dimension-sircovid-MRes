@@ -17,6 +17,16 @@ orderly::orderly_develop_start('vaccine_delay_fits_gradient',
                                        deterministic = TRUE),
                      use_draft = "newer")
 
+orderly::orderly_develop_start('vaccine_delay_fits_gradient_comp',
+                               parameters = list(region = "london",
+                                                 short_run = TRUE,
+                                                 deterministic = TRUE,
+                                                 compare = 'b1',
+                                                 N = 10,
+                                                 L = 1,
+                                                 epsilon = .2),
+                               use_draft = "newer")
+
 orderly::orderly_run('vaccine_delay_fits_gradient',
                                parameters = list(region = "london",
                                                  short_run = TRUE,

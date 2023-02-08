@@ -3,7 +3,7 @@ options(didehpc.cluster = "fi--didemrchnb",
 
 setwd(orderly::orderly_config()$root)
 
-packages <- c("sircovid", "orderly", "mcstate", "dust", "spimalot", "dplyr","MASS","readr")
+packages <- c("sircovid", "orderly", "mcstate", "dust", "spimalot", "dplyr","MASS","readr","ggplot2")
 
 src <- conan::conan_sources(NULL,
                             repos = c("https://ncov-ic.github.io/drat",
