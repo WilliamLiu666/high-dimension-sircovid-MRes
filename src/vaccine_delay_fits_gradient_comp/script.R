@@ -83,38 +83,33 @@ invM <- read.csv("invM.csv")
 invM <- as.matrix(invM[,2:29])
 M <- solve(invM)
 
-epsilon <- 0.22
-L <- 1
-N <- 1000
-N_block <- 1
-HMC_samples <- matrix(0,N*N_block+1,length(theta))
+
+HMC_samples <- matrix(0,N+1,length(theta))
 HMC_samples[1,] <- theta
-compare <- 'b1'
 
 if (compare == TRUE){
-  acc.list <- matrix(0,nrow =N*N_block, ncol = 6)
+  acc.list <- matrix(0,nrow =N, ncol = 6)
 }else{
-  acc.list <- rep(0,N*N_block)
+  acc.list <- rep(0,N)
 }
 
-for (j in 1:N_block){
 
-  ## HMC for N iterations
-  for (i in 1:N){
-    ind <- (j-1)*N+i+1
-    if (ind%%10 == 0){
-      print(ind)
-    }
-    result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
-    HMC_samples[ind,] <- result$q
-    if (compare == TRUE){
-      acc.list[ind-1,] <- result$acc.list
-    }
-    else{
-      acc.list[ind-1] <- result$acc.list
-    }
+## HMC for N iterations
+for (i in 1:N){
+  ind <- i+1
+  if (ind%%10 == 0){
+    print(ind)
+  }
+  result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
+  HMC_samples[ind,] <- result$q
+  if (compare == TRUE){
+    acc.list[ind-1,] <- result$acc.list
+  }
+  else{
+    acc.list[ind-1] <- result$acc.list
   }
 }
+
 
 print(acc_rate(HMC_samples))
 effectiveSize(HMC_samples)

@@ -9,6 +9,10 @@ parameters:
       default: false
     short_run:
       default: false
+    compare: ~
+    N: ~
+    L: ~
+    epsilon: ~
 
 artefacts:
 ## The outcome of the parent fitting task.

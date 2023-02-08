@@ -21,7 +21,12 @@ obj <- didehpc::queue_didehpc(ctx, config = cfg)
 fit <- obj$enqueue(orderly::orderly_run('vaccine_delay_fits_gradient_comp',
                                         parameters = list(region = "london",
                                                           short_run = TRUE,
-                                                          deterministic = TRUE),
-                                        use_draft = "newer"))
+                                                          deterministic = TRUE,
+                                                          compare = 'b1',
+                                                          N = 1000,
+                                                          L = 1,
+                                                          epsilon = .168),
+                                        use_draft = "newer")
+)
 fit$result()
 
