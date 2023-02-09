@@ -80,15 +80,18 @@ filter2 <- resize_filter(filter, n_pars + 1, n_threads)
 theta <- read_csv("theta.csv")
 theta <- as.array(theta$x)
 
-grad <- matrix(0,nrow = 6, ncol = 13)
-axis.x <- rep(0,13)
-for (i in 2:14){
+grad <- matrix(0,nrow = 6, ncol = 10)
+axis.x <- rep(0,10)
+for (i in 2:11){
   eps = 10^-i
   axis.x[i-1] <- eps
-  grad[,i] <- gradient_LP_parallel(theta,filter2,pars,compare= TRUE, eps = eps)
+  grad[,i-1] <- gradient_LP_parallel(theta,filter2,pars,compare= TRUE, eps = eps)[,1]
 }
-
-df <- data.frame(c1 <- grad[1,],c2 <- grad[2,],f1 <- grad[3,],f2 <- grad[4,],b1 <- grad[5,],b2 <- grad[6,],axis.x <- axis.x)
+true <- mean(grad[,4:7])
+df <- data.frame(c1 <- abs(grad[1,]-true),c2 <- abs(grad[2,]-true),
+                 f1 <- abs(grad[3,]-true),f2 <- abs(grad[4,]-true),
+                 b1 <- abs(grad[5,]-true),b2 <- abs(grad[6,]-true),
+                 axis.x <- axis.x)
 
 
 message("Saving results")
@@ -101,9 +104,10 @@ library(ggplot2)
 p <- ggplot(df,aes(x = axis.x))+geom_line(aes(y = c1,color = "c1"))+geom_line(aes(y = c2,color = "c2"))+
   geom_line(aes(y = f1,color = "f1"))+geom_line(aes(y = f2,color = "f2"))+
   geom_line(aes(y = b1,color = "b1"))+geom_line(aes(y = b2,color = "b2"))+
-  scale_x_continuous(trans = 'log10')+labs(x = "Year",
-                                           y = "(%)",
+  scale_x_continuous(trans = 'log10')+scale_y_continuous(trans = 'log10')+
+  labs(x = "epsilon" , y =  "derivative at the first dimension",
                                            color = "Legend")
+
 pdf('outputs/gradient_plot.pdf')
 p
 dev.off()
