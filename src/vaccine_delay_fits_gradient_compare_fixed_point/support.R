@@ -55,10 +55,10 @@ RnPosterior <- function(theta, filter, pars){
 }
 
 #Calculate the gradient
-gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4){
+gradient_LP_parallel <- function(theta, filter, pars, method = 'all', eps = 1e-4){
   n <- length(theta)
   
-  if (compare == TRUE || compare == 'c2'){
+  if (method == 'all' || method == 'c2'){
     ## Forward step with 1 unit
     ## first column will be theta, the following n columns will correspond to one parameter perturbed
     theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
@@ -107,7 +107,7 @@ gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4
     
     LP_0 <- LP.b2[1]
     
-    if (compare == TRUE){
+    if (method == 'all'){
       result <- matrix(0,nrow = 6,ncol = 28)
       result[1,] <- (-LP_h.b1/2+LP_h.f1/2)/eps
       result[2,] <- (LP_h.b2/12-LP_h.b1*2/3+LP_h.f1*2/3-LP_h.f2/12)/eps
@@ -121,7 +121,7 @@ gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4
     }
     
   }
-  else if (compare=='c1'){
+  else if (method=='c1'){
     ## Forward step with 1 unit
     ## first column will be theta, the following n columns will correspond to one parameter perturbed
     theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
@@ -146,7 +146,7 @@ gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4
     
     result <- (-LP_h.b1/2+LP_h.f1/2)/eps
   }
-  else if (compare == 'f1'){
+  else if (method == 'f1'){
     ## Forward step with 1 unit
     ## first column will be theta, the following n columns will correspond to one parameter perturbed
     theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
@@ -161,7 +161,7 @@ gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4
     
     result <- (-LP_0+LP_h.f1)/eps
   }
-  else if (compare == 'f2'){
+  else if (method == 'f2'){
     ## Forward step with 1 unit
     ## first column will be theta, the following n columns will correspond to one parameter perturbed
     theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
@@ -188,7 +188,7 @@ gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4
     
     result <- (-LP_0*3/2+2*LP_h.f1-LP_h.f2/2)/eps
   }
-  else if (compare == 'b1'){
+  else if (method == 'b1'){
     ## Backward step with 1 unit
     ## first column will be theta, the following n columns will correspond to one parameter perturbed
     theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
@@ -202,7 +202,7 @@ gradient_LP_parallel <- function(theta, filter, pars, compare = TRUE, eps = 1e-4
     LP_0 <- LP.b1[1]
     result <- (-LP_h.b1+LP_0)/eps
   }
-  else if (compare == 'b2'){
+  else if (method == 'b2'){
     ## Backward step with 1 unit
     ## first column will be theta, the following n columns will correspond to one parameter perturbed
     theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
@@ -317,14 +317,14 @@ fix_unused_parameters <- function(pars, date) {
 }
 
 
-HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current_q, filter,filter2, pars, M, invM,compare = TRUE){
+HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current_q, filter,filter2, pars, M, invM,method = 'all'){
   q = current_q
   
   p = mvrnorm(1,rep(0,length(q)),M) # independent standard normal variates
   current_p = p
   
   # Test on different functions
-  if (compare == TRUE){
+  if (method == 'all'){
     acc = rep(0,6)
     grad <- gradient_LP_parallel(q, filter2, pars)
     for (g in 1:6){
@@ -355,7 +355,7 @@ HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current
       acc[g] <- min(1,exp(current_U-proposed_U+current_K-proposed_K))
     }
   }else{
-    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, compare = compare) / 2
+    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, method = method) / 2
     
     # Alternate full steps for position and momentum
     for (i in 1:L)
@@ -363,11 +363,11 @@ HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current
       # Make a full step for the position
       q = q + epsilon * invM%*%p
       # Make a full step for the momentum, except at end of trajectory
-      if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, compare = compare)
+      if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, method = method)
     }
     
     # Make a half step for momentum at the end.
-    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, compare = compare) / 2
+    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, method = method) / 2
     
     # Negate momentum at end of trajectory to make the proposal symmetric
     p = -p
