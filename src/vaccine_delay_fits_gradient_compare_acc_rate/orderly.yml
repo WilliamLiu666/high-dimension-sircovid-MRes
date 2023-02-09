@@ -9,7 +9,6 @@ parameters:
       default: false
     short_run:
       default: false
-    compare: ~
     N: ~
     L: ~
     epsilon: ~
@@ -21,15 +20,10 @@ artefacts:
 ## restart.rds – Subset of fit.rds and it contains the important info
 # required for restart fit.
 
-  - staticgraph:
-      description: HMC trace plots
-      filenames:
-        - outputs/plot.pdf
   - data:
       description: HMC results for combined task
       filenames:
-        - outputs/samples.csv
-        - outputs/acceptance_rate.csv
+        - outputs/samples_method_c1.csv
 
 sources:
   - data.R

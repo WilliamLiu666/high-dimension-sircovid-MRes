@@ -87,34 +87,32 @@ M <- solve(invM)
 HMC_samples <- matrix(0,N+1,length(theta))
 HMC_samples[1,] <- theta
 
-if (compare == TRUE){
-  acc.list <- matrix(0,nrow =N, ncol = 6)
-}else{
+dir.create("outputs", FALSE, TRUE)
+
+for (compare in c('c1','c2','f1','f2','b1','b2')){
   acc.list <- rep(0,N)
+  ## HMC for N iterations
+  for (i in 1:N){
+    ind <- i+1
+    if (ind%%10 == 0){
+      print(ind)
+    }
+    result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
+    HMC_samples[ind,] <- result$q
+    if (compare == TRUE){
+      acc.list[ind-1,] <- result$acc.list
+    }
+    else{
+      acc.list[ind-1] <- result$acc.list
+    }
+  }
+  write.csv(HMC_samples,sprintf('outputs/samples_method_%s.csv',compare))
+  write.csv(acc.list,sprintf('outputs/acc_method_%s.csv',compare))
+  
 }
 
-
-## HMC for N iterations
-for (i in 1:N){
-  ind <- i+1
-  if (ind%%10 == 0){
-    print(ind)
-  }
-  result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
-  HMC_samples[ind,] <- result$q
-  if (compare == TRUE){
-    acc.list[ind-1,] <- result$acc.list
-  }
-  else{
-    acc.list[ind-1] <- result$acc.list
-  }
-}
 
 
 
 message("Saving results")
-dir.create("outputs", FALSE, TRUE)
-
-
-message("Saving plots")
 

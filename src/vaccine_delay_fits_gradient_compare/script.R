@@ -87,7 +87,7 @@ M <- solve(invM)
 HMC_samples <- matrix(0,N+1,length(theta))
 HMC_samples[1,] <- theta
 
-if (compare == TRUE){
+if (method == 'all'){
   acc.list <- matrix(0,nrow =N, ncol = 6)
 }else{
   acc.list <- rep(0,N)
@@ -100,9 +100,9 @@ for (i in 1:N){
   if (ind%%10 == 0){
     print(ind)
   }
-  result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, compare = compare)
+  result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, method = method)
   HMC_samples[ind,] <- result$q
-  if (compare == TRUE){
+  if (method == 'all'){
     acc.list[ind-1,] <- result$acc.list
   }
   else{

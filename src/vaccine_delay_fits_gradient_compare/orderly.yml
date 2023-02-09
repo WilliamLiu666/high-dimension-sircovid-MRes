@@ -9,7 +9,7 @@ parameters:
       default: false
     short_run:
       default: false
-    compare: ~
+    method: ~
     N: ~
     L: ~
     epsilon: ~
