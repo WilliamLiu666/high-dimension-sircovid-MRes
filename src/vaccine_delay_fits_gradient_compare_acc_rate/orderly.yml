@@ -13,6 +13,7 @@ parameters:
     L: ~
     epsilon: ~
 
+
 artefacts:
 ## The outcome of the parent fitting task.
 ## fit.rds – outcome of the fit process which includes samples, rt values,
@@ -24,6 +25,17 @@ artefacts:
       description: HMC results for combined task
       filenames:
         - outputs/samples_method_c1.csv
+        - outputs/samples_method_c2.csv
+        - outputs/samples_method_f1.csv
+        - outputs/samples_method_f2.csv
+        - outputs/samples_method_b1.csv
+        - outputs/samples_method_b2.csv
+        - outputs/acc_method_c1.csv
+        - outputs/acc_method_c2.csv
+        - outputs/acc_method_f1.csv
+        - outputs/acc_method_f2.csv
+        - outputs/acc_method_b1.csv
+        - outputs/acc_method_b2.csv
 
 sources:
   - data.R

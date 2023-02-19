@@ -77,58 +77,52 @@ n_pars <- length(pars$mcmc$initial())
 filter2 <- resize_filter(filter, n_pars + 1, n_threads)
 
 ## load parameters
-getwd()
 theta <- read_csv("theta.csv")
 theta <- as.array(theta$x)
 invM <- read.csv("invM.csv")
 invM <- as.matrix(invM[,2:29])
 M <- solve(invM)
 
-epsilon <- 0.22
-L <- 1
-N <- 1000
-N_block <- 1
-HMC_samples <- matrix(0,N*N_block+1,length(theta))
+
+HMC_samples <- matrix(0,N+1,length(theta))
 HMC_samples[1,] <- theta
 
+ESS_mat <- rep(NaN, ne)
+acceptance_rate <- rep(NaN,ne)
+eps_list <- rep(NaN,ne)
 
-for (j in 1:N_block){
+dir.create("outputs", FALSE, TRUE)
 
+
+for (e in 1:ne){
+  epsilon <- start + e*step
+  eps_list[e] <- epsilon
   ## HMC for N iterations
   for (i in 1:N){
-    ind <- (j-1)*N+i+1
-    print(ind)
-    HMC_samples[ind,] <- HMC_parallel(RnPosterior, gradient_LP, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM)
+    ind <- i+1
+    if (ind%%100 == 0){
+      print(sprintf('L = %s, epsilon = %s, ind = %s',L,epsilon,ind))
+    }
+    result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, method = method)
+    HMC_samples[ind,] <- result$q
   }
+  message("Saving results")
+  write.csv(HMC_samples,sprintf('outputs/samples_L_%s_epsilon_%s.csv',L,epsilon))
+  print(acc_rate(HMC_samples))
+  acceptance_rate[e] <- acc_rate(HMC_samples)
+  ESS_mat[e] <- sum(effectiveSize(HMC_samples))
+  save_plot(HMC_samples,sprintf('outputs/plots_L_%s_epsilon_%s.pdf',L,epsilon))
 }
 
-message("Saving results")
-dir.create("outputs", FALSE, TRUE)
-write.csv(HMC_samples,'outputs/samples.csv')
-
+write.csv(ESS_mat,'outputs/ESS.csv')
 message("Saving plots")
-pdf('outputs/plot.pdf')
-par(mfrow=c(3,4))
-for (i in 1:6){
-  acf(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-  plot(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-}
-for (i in 7:12){
-  acf(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-  plot(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-}
-for (i in 13:18){
-  acf(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-  plot(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-}
-for (i in 19:24){
-  acf(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-  plot(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-}
-for (i in 25:28){
-  acf(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-  plot(HMC_samples[,i],main = sprintf('the %s th dimension',i))
-}
-dev.off()
+pdf('outputs/heat_plot.pdf')
+# x <- 1:nL
+# y <- 1:ne
+# data <- expand.grid(X=x, Y=y)
+# data$Z <- (1:nL*ne)
+# ggplot(data,aes(X, Y, fill= Z)) + geom_tile()
 
-effectiveSize(HMC_samples)
+plot(eps_list,acceptance_rate,type = 'l', xlab = 'epsilon', ylab = 'acceptance rate')
+
+dev.off()

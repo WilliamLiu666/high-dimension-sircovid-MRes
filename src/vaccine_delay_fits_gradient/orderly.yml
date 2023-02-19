@@ -9,9 +9,14 @@ parameters:
       default: false
     short_run:
       default: false
-    epsilon: ~
-    L: ~
+    method:
+      default: 'f1'
     N: ~
+    start: ~
+    step: ~
+    ne: ~
+    L: ~
+
 
 artefacts:
 ## The outcome of the parent fitting task.
@@ -23,11 +28,8 @@ artefacts:
   - staticgraph:
       description: HMC trace plots
       filenames:
-        - outputs/plot.pdf
-  - data:
-      description: HMC results for combined task
-      filenames:
-        - outputs/samples.csv
+        - outputs/heat_plot.pdf
+
 
 sources:
   - data.R

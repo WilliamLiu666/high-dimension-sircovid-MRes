@@ -18,13 +18,16 @@ obj <- didehpc::queue_didehpc(ctx, config = cfg)
 
 
 ## Long run of the fits task
-fit <- obj$enqueue(orderly::orderly_run('vaccine_delay_fits_gradient_compare_acc_rate',
+fit <- obj$enqueue(orderly::orderly_run('vaccine_delay_fits_gradient',
                                         parameters = list(region = "london",
                                                           short_run = TRUE,
                                                           deterministic = TRUE,
-                                                          N = 800,
-                                                          epsilon = .16,
-                                                          L = 1),
+                                                          N = 1000,
+                                                          method = 'f1',
+                                                          start = 0.04,
+                                                          step = 0.01,
+                                                          ne = 15,
+                                                          L = 2),
                                         use_draft = "newer")
 )
 fit$result()

@@ -54,54 +54,186 @@ RnPosterior <- function(theta, filter, pars){
   return(LL_theta+LP_theta)
 }
 
-#This function evaluate the posterior at multiple point in the parameter space
-calculate_posterior_map <- function(parameter_samples, filter, pars){
-  apply(parameter_samples, 2, function(x)
-    RnPosterior(x, filter, pars))
-}
-
 #Calculate the gradient
-gradient_LP <- function(theta, filter, pars, eps = 1e-4){
+gradient_LP_parallel <- function(theta, filter, pars, method = 'all', eps = 1e-4){
   n <- length(theta)
-  theta_h <- diag(eps,n) + matrix(rep(theta,n),ncol = n)
   
-  LP_theta <- RnPosterior(theta, filter, pars)
-  LP_h <- calculate_posterior_map(theta_h, filter, pars)
+  if (method == 'all' || method == 'c2'){
+    ## Forward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.f1 <- calculate_posterior_map_parallel(theta_map.f1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.f1 <- LP.f1[-1]
+    
+    
+    
+    ## Forward step with 2 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.f2 <- cbind(rep(0, n), diag(eps*2, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.f2 <- calculate_posterior_map_parallel(theta_map.f2, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.f2 <- LP.f2[-1]
+    
+    
+    
+    ## Backward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.b1 <- calculate_posterior_map_parallel(theta_map.b1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.b1 <- LP.b1[-1]
+    
+    
+    
+    ## Backward step with 2 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.b2 <- cbind(rep(0, n), diag(-eps*2, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.b2 <- calculate_posterior_map_parallel(theta_map.b2, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.b2 <- LP.b2[-1]
+    
+    LP_0 <- LP.b2[1]
+    
+    if (method == 'all'){
+      result <- matrix(0,nrow = 6,ncol = 28)
+      result[1,] <- (-LP_h.b1/2+LP_h.f1/2)/eps
+      result[2,] <- (LP_h.b2/12-LP_h.b1*2/3+LP_h.f1*2/3-LP_h.f2/12)/eps
+      result[3,] <- (-LP_0+LP_h.f1)/eps
+      result[4,] <- (-LP_0*3/2+2*LP_h.f1-LP_h.f2/2)/eps
+      result[5,] <- (-LP_h.b1+LP_0)/eps
+      result[6,] <- (LP_h.b2/2-LP_h.b1*2 +LP_0*3/2)/eps
+    }
+    else {
+      result <- (LP_h.b2/12-LP_h.b1*2/3+LP_h.f1*2/3-LP_h.f2/12)/eps
+    }
+    
+  }
+  else if (method=='c1'){
+    ## Forward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.f1 <- calculate_posterior_map_parallel(theta_map.f1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.f1 <- LP.f1[-1]
+    
+    ## Backward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.b1 <- calculate_posterior_map_parallel(theta_map.b1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.b1 <- LP.b1[-1]
+    
+    LP_0 <- LP.b1[1]
+    
+    result <- (-LP_h.b1/2+LP_h.f1/2)/eps
+  }
+  else if (method == 'f1'){
+    ## Forward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.f1 <- calculate_posterior_map_parallel(theta_map.f1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.f1 <- LP.f1[-1]
+    
+    LP_0 <- LP.f1[1]
+    
+    result <- (-LP_0+LP_h.f1)/eps
+  }
+  else if (method == 'f2'){
+    ## Forward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.f1 <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.f1 <- calculate_posterior_map_parallel(theta_map.f1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.f1 <- LP.f1[-1]
+    
+    
+    
+    ## Forward step with 2 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.f2 <- cbind(rep(0, n), diag(eps*2, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.f2 <- calculate_posterior_map_parallel(theta_map.f2, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.f2 <- LP.f2[-1]
+    
+    LP_0 <- LP.f2[1]
+    
+    result <- (-LP_0*3/2+2*LP_h.f1-LP_h.f2/2)/eps
+  }
+  else if (method == 'b1'){
+    ## Backward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.b1 <- calculate_posterior_map_parallel(theta_map.b1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.b1 <- LP.b1[-1]
+    
+    LP_0 <- LP.b1[1]
+    result <- (-LP_h.b1+LP_0)/eps
+  }
+  else if (method == 'b2'){
+    ## Backward step with 1 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.b1 <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.b1 <- calculate_posterior_map_parallel(theta_map.b1, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.b1 <- LP.b1[-1]
+    
+    
+    
+    ## Backward step with 2 unit
+    ## first column will be theta, the following n columns will correspond to one parameter perturbed
+    theta_map.b2 <- cbind(rep(0, n), diag(-eps*2, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
+    
+    ## calculate posterior across all columns in theta_map
+    LP.b2 <- calculate_posterior_map_parallel(theta_map.b2, filter, pars)
+    
+    ## the rest used to calculate gradient estimate
+    LP_h.b2 <- LP.b2[-1]
+    
+    LP_0 <- LP.b2[1]
+
+    result <- (LP_h.b2/2-LP_h.b1*2 +LP_0*3/2)/eps
+  }
   
-  list(LP = LP_theta,
-       grad_LP = (LP_h-LP_theta)/eps)
+  
+  return(result)
 }
 
-gradient_LP_parallel <- function(theta, filter, pars, eps = 1e-4){
-  n <- length(theta)
-  ## first column will be theta, the following n columns will correspond to
-  ## one parameter perturbed
-  theta_map <- cbind(rep(0, n), diag(eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
-
-  ## calculate posterior across all columns in theta_map
-  LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
-  
-  ## first value corresponds to theta
-  LP_theta <- LP[1]
-  ## the rest used to calculate gradient estimate
-  LP_h <- LP[-1]
-  names(LP_h) <- names(theta)
-  
-  # #one parameter perturbed
-  # theta_map <- cbind(rep(0, n), diag(-eps, n)) + matrix(rep(theta, n + 1), ncol = n + 1)
-  #
-  # #calculate posterior across all columns in theta_map
-  # LP <- calculate_posterior_map_parallel(theta_map, filter, pars)
-  #
-  # first value corresponds to theta
-  # LP_theta <- LP[1]
-  # #the rest used to calculate gradient estimate
-  # LP_h2 <- LP[-1]
-  # names(LP_h2) <- names(theta)
-  
-  list(LP = LP_theta,
-       grad_LP = (LP_h - LP_theta) / (eps))
-}
 
 #This function evaluate the posterior at multiple point in the parameter space
 calculate_posterior_map_parallel <- function(parameter_samples, filter, pars){
@@ -185,46 +317,81 @@ fix_unused_parameters <- function(pars, date) {
 }
 
 
-HMC_parallel <- function (RnPosterior, gradient_LP, epsilon, L, current_q, filter,filter2, pars, M, invM)
-{
+HMC_parallel <- function (RnPosterior, gradient_LP_parallel, epsilon, L, current_q, filter,filter2, pars, M, invM,method = 'all'){
   q = current_q
   
   p = mvrnorm(1,rep(0,length(q)),M) # independent standard normal variates
   current_p = p
   
-  # Make a half step for momentum at the beginning
-  p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP / 2
-  
-  # Alternate full steps for position and momentum
-  for (i in 1:L)
-  {
-    # Make a full step for the position
-    q = q + epsilon * invM%*%p
-    # Make a full step for the momentum, except at end of trajectory
-    if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP
+  # Test on different functions
+  if (method == 'all'){
+    acc = rep(0,6)
+    grad <- gradient_LP_parallel(q, filter2, pars)
+    for (g in 1:6){
+      # Make a half step for momentum at the beginning
+      p = p - epsilon * -grad[g,] / 2
+      
+      # Alternate full steps for position and momentum
+      for (i in 1:L)
+      {
+        # Make a full step for the position
+        q = q + epsilon * invM%*%p
+        # Make a full step for the momentum, except at end of trajectory
+        if (i!=L) p = p - epsilon * -grad[g,]
+      }
+      
+      # Make a half step for momentum at the end.
+      p = p - epsilon * -grad[g,] / 2
+      
+      # Negate momentum at end of trajectory to make the proposal symmetric
+      p = -p
+      
+      # Evaluate potential and kinetic energies at start and end of trajectory
+      current_U = -RnPosterior(current_q, filter, pars)
+      current_K = current_p %*% invM %*% current_p /2
+      proposed_U = -RnPosterior(q, filter, pars)
+      proposed_K = p %*% invM %*% p /2
+      
+      acc[g] <- min(1,exp(current_U-proposed_U+current_K-proposed_K))
+    }
+  }else{
+    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, method = method) / 2
+    
+    # Alternate full steps for position and momentum
+    for (i in 1:L)
+    {
+      # Make a full step for the position
+      q = q + epsilon * invM%*%p
+      # Make a full step for the momentum, except at end of trajectory
+      if (i!=L) p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, method = method)
+    }
+    
+    # Make a half step for momentum at the end.
+    p = p - epsilon * -gradient_LP_parallel(q, filter2, pars, method = method) / 2
+    
+    # Negate momentum at end of trajectory to make the proposal symmetric
+    p = -p
+    
+    # Evaluate potential and kinetic energies at start and end of trajectory
+    current_U = -RnPosterior(current_q, filter, pars)
+    current_K = current_p %*% invM %*% current_p /2
+    proposed_U = -RnPosterior(q, filter, pars)
+    proposed_K = p %*% invM %*% p /2
+    
+    acc <- min(1,exp(current_U-proposed_U+current_K-proposed_K))
   }
   
-  # Make a half step for momentum at the end.
-  p = p - epsilon * -gradient_LP_parallel(q, filter2, pars)$grad_LP / 2
   
-  # Negate momentum at end of trajectory to make the proposal symmetric
-  p = -p
-  
-  # Evaluate potential and kinetic energies at start and end of trajectory
-  current_U = -RnPosterior(current_q, filter, pars)
-  current_K = current_p %*% invM %*% current_p /2
-  proposed_U = -RnPosterior(q, filter, pars)
-  proposed_K = p %*% invM %*% p /2
   
   # Accept or reject the state at end of trajectory, returning either
   # the position at the end of the trajectory or the initial position
   if (runif(1) < exp(current_U-proposed_U+current_K-proposed_K))
   {
-    return (q) # accept
+    return (list(q=q,acc.list=acc)) # accept
   }
   else
   {
-    return (current_q) # reject
+    return (list(q=current_q,acc.list=acc)) # reject
   }
   
 }
@@ -258,4 +425,28 @@ simplify_transform <- function(pars, path, date) {
 
   pars
 }
-
+save_plot <- function(x,path){
+  pdf(path)
+  par(mfrow=c(3,4))
+  for (i in 1:6){
+    acf(x[,i],main = sprintf('the %s th dimension',i))
+    plot(x[,i],main = sprintf('the %s th dimension',i))
+  }
+  for (i in 7:12){
+    acf(x[,i],main = sprintf('the %s th dimension',i))
+    plot(x[,i],main = sprintf('the %s th dimension',i))
+  }
+  for (i in 13:18){
+    acf(x[,i],main = sprintf('the %s th dimension',i))
+    plot(x[,i],main = sprintf('the %s th dimension',i))
+  }
+  for (i in 19:24){
+    acf(x[,i],main = sprintf('the %s th dimension',i))
+    plot(x[,i],main = sprintf('the %s th dimension',i))
+  }
+  for (i in 25:28){
+    acf(x[,i],main = sprintf('the %s th dimension',i))
+    plot(x[,i],main = sprintf('the %s th dimension',i))
+  }
+  dev.off()
+}
