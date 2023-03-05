@@ -24,18 +24,7 @@ artefacts:
   - data:
       description: HMC results for combined task
       filenames:
-        - outputs/samples_method_c1.csv
-        - outputs/samples_method_c2.csv
-        - outputs/samples_method_f1.csv
-        - outputs/samples_method_f2.csv
-        - outputs/samples_method_b1.csv
-        - outputs/samples_method_b2.csv
-        - outputs/acc_method_c1.csv
-        - outputs/acc_method_c2.csv
-        - outputs/acc_method_f1.csv
-        - outputs/acc_method_f2.csv
-        - outputs/acc_method_b1.csv
-        - outputs/acc_method_b2.csv
+        - outputs/acceptance_rate.csv
 
 sources:
   - data.R

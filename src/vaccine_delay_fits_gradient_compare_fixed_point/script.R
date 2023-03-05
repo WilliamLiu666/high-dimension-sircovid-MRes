@@ -80,35 +80,47 @@ filter2 <- resize_filter(filter, n_pars + 1, n_threads)
 theta <- read_csv("theta.csv")
 theta <- as.array(theta$x)
 
-grad <- matrix(0,nrow = 6, ncol = 10)
-axis.x <- rep(0,10)
-for (i in 2:11){
+grad <- array(0, c(12,6,28))
+axis.x <- rep(0,12)
+for (i in 2:13){
   eps = 10^-i
   axis.x[i-1] <- eps
-  grad[,i-1] <- gradient_LP_parallel(theta,filter2,pars,compare= TRUE, eps = eps)[,1]
+  grad[i-1,,] <- gradient_LP_parallel(theta,filter2,pars,method = 'all', eps = eps)
 }
-true <- mean(grad[,4:7])
-df <- data.frame(c1 <- abs(grad[1,]-true),c2 <- abs(grad[2,]-true),
-                 f1 <- abs(grad[3,]-true),f2 <- abs(grad[4,]-true),
-                 b1 <- abs(grad[5,]-true),b2 <- abs(grad[6,]-true),
-                 axis.x <- axis.x)
 
 
-message("Saving results")
-dir.create("outputs", FALSE, TRUE)
-write.csv(grad,'outputs/gradient.csv')
+# true <- 0
+# dimension <- 2
+# df <- data.frame(central_1st_order = log(abs(grad[2:11,1,dimension]-true)),central_2nd_order = log(abs(grad[2:11,2,dimension]-true)),
+#                  forward_1st_order = log(abs(grad[2:11,3,dimension]-true)),forward_2nd_order = log(abs(grad[2:11,4,dimension]-true)),
+#                  backward_1st_order = log(abs(grad[2:11,5,dimension]-true)),backward_2nd_order = log(abs(grad[2:11,6,dimension]-true)),
+#                  axis.x = axis.x[2:11])
+
+df <- data.frame(central_1st_order = (rowSums(grad[2:11,1,]^2))^(1/2),central_2nd_order = (rowSums(grad[2:11,2,]^2))^(1/2),
+                 forward_1st_order = (rowSums(grad[2:11,3,]^2))^(1/2),forward_2nd_order = (rowSums(grad[2:11,4,]^2))^(1/2),
+                 backward_1st_order = (rowSums(grad[2:11,5,]^2))^(1/2),backward_2nd_order = (rowSums(grad[2:11,6,]^2))^(1/2),
+                 axis.x = axis.x[2:11])
 
 
-message("Saving plots")
+# message("Saving results")
+# dir.create("outputs", FALSE, TRUE)
+# write.csv(grad,'outputs/gradient.csv')
+
+
+# message("Saving plots")
 library(ggplot2)
-p <- ggplot(df,aes(x = axis.x))+geom_line(aes(y = c1,color = "c1"))+geom_line(aes(y = c2,color = "c2"))+
-  geom_line(aes(y = f1,color = "f1"))+geom_line(aes(y = f2,color = "f2"))+
-  geom_line(aes(y = b1,color = "b1"))+geom_line(aes(y = b2,color = "b2"))+
-  scale_x_continuous(trans = 'log10')+scale_y_continuous(trans = 'log10')+
-  labs(x = "epsilon" , y =  "derivative at the first dimension",
+p <- ggplot(df,aes(x = axis.x))+
+  geom_line(aes(y = central_1st_order,color = "central 1st order"),lwd=1.2)+
+  geom_line(aes(y = central_2nd_order,color = "central 2nd order"),lwd=1.2)+
+  geom_line(aes(y = forward_1st_order,color = "forward 1st order"),lwd=1.2)+
+  geom_line(aes(y = forward_2nd_order,color = "forward 2nd order"),lwd=1.2)+
+  geom_line(aes(y = backward_1st_order,color = "backward 1st order"),lwd=1.2)+
+  geom_line(aes(y = backward_2nd_order,color = "backward 2nd order"),lwd=1.2)+
+  scale_x_continuous(trans = 'log10')+
+  labs(x = "h" , y =  "2-norm of gradient",
                                            color = "Legend")
 
-pdf('outputs/gradient_plot.pdf')
+# pdf('outputs/gradient_plot.pdf')
 p
 dev.off()
 

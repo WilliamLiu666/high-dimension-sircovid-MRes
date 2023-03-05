@@ -38,7 +38,7 @@ pars <- fix_unused_parameters(pars, date)
 
 #Create the conversions functions for the parameters in order to fit in |R^d
 #And attach them to the pars object
-pars <- create_Rn2par(pars)
+pars <- create_Rn2par_new(pars)
 
 restart_date <- NULL
 

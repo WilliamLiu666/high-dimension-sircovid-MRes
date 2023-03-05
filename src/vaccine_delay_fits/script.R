@@ -11,9 +11,9 @@ trim_deaths <- 4
 trim_pillar2 <- 5
 
 ## MCMC control (only applies if short_run = FALSE)
-burnin <- 500
-n_mcmc <- 1500
-chains <- 4
+burnin <- 5000
+n_mcmc <- 20000
+chains <- 1
 kernel_scaling <- 0.2
 
 #Checks current region is valid
@@ -74,7 +74,7 @@ filter <- spimalot::spim_particle_filter(data, pars$mcmc,
 ## This bit takes ages, of course
 samples <- spimalot::spim_fit_run(pars, filter, control$pmcmc)
 
-write.csv(samples$pars,file = 'samples.csv')
+write.csv(samples$pars_full,file = 'samples.csv')
 
 ## This is the data set including series that we do not fit to, and
 ## with the full series of carehomes deaths.

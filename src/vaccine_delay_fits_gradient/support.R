@@ -46,6 +46,23 @@ create_Rn2par <- function(pars){
   pars
 }
 
+create_Rn2par_new <- function(pars){
+  
+  #use this list as the reference for the list of names
+  #the Rn vector is matching the order of this list
+  par_names <- names(pars$mcmc$initial())
+  
+  i <- match(par_names, pars$info$name)
+  pars_min <- pars$info$min[i]
+  pars_max <- pars$info$max[i]
+  names(pars_min) <- names(pars_max) <- par_names
+  
+  pars$par2Rn <- function(x) (log((x - pars_min) / (pars_max - x)) )*100
+  pars$Rn2par <- function(x) (pars_min + pars_max * exp(x/100)) / (1 + exp(x/100))
+  
+  pars
+}
+
 #This function takes a R^n function and calculate the posterior of our model
 RnPosterior <- function(theta, filter, pars){
   p <- pars$Rn2par(theta)
@@ -55,7 +72,7 @@ RnPosterior <- function(theta, filter, pars){
 }
 
 #Calculate the gradient
-gradient_LP_parallel <- function(theta, filter, pars, method = 'all', eps = 1e-4){
+gradient_LP_parallel <- function(theta, filter, pars, method = 'all', eps = 1e-7){
   n <- length(theta)
   
   if (method == 'all' || method == 'c2'){

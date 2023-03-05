@@ -89,24 +89,30 @@ HMC_samples[1,] <- theta
 
 dir.create("outputs", FALSE, TRUE)
 
-for (method in c('c1','c2','f1','f2','b1','b2')){
-  acc.list <- rep(0,N)
-  ## HMC for N iterations
-  for (i in 1:N){
-    ind <- i+1
-    if (ind%%10 == 0){
-      print(ind)
+acc_mat <- matrix(NaN,5,6)
+
+print('eps is 1e-4')
+
+for(n in 1:5){
+  for (m in 1:6){
+    method <-  c('c1','c2','f1','f2','b1','b2')[m]
+    ## HMC for N iterations
+    for (i in 1:N){
+      ind <- i+1
+      if (ind%%50 == 0){
+        print(sprintf('%s th iteration of %s method, repeat %s',i,method,n))
+      }
+      result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, method = method)
+      HMC_samples[ind,] <- result$q
     }
-    result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, method = method)
-    HMC_samples[ind,] <- result$q
-    acc.list[ind-1] <- result$acc.list
+    acc_mat[n,m] <- acc_rate(HMC_samples)
   }
-  write.csv(HMC_samples,sprintf('outputs/samples_method_%s.csv',method))
-  write.csv(acc.list,sprintf('outputs/acc_method_%s.csv',method))
 }
 
 
-
-
 message("Saving results")
+write.csv(acc_mat,'outputs/acceptance_rate.csv')
+
+
+
 
