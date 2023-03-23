@@ -77,13 +77,15 @@ n_pars <- length(pars$mcmc$initial())
 filter2 <- resize_filter(filter, n_pars + 1, n_threads)
 
 ## load parameters
-samples <- samples <- read_csv("samples.csv")
+samples <- samples <- read_csv("parameters/samples.csv")
 samples <- as.matrix(samples[,2:29])
+
+## Compute M, inverse M 
 invM <- cov(t(pars$par2Rn(t(samples[5000:20000,]))))
 theta <- pars$par2Rn(t(samples[20000,]))
 M <- solve(invM)
 
-
+## initialize the output
 HMC_samples <- matrix(0,N+1,length(theta))
 HMC_samples[1,] <- theta
 
@@ -95,17 +97,25 @@ dir.create("outputs", FALSE, TRUE)
 
 
 for (e in 1:ne){
+  
+  #set the value of epsilon
   epsilon <- start + e*step
   eps_list[e] <- epsilon
+  
   ## HMC for N iterations
   for (i in 1:N){
     ind <- i+1
+    
+    ## report progress for every 100 iterations
     if (ind%%100 == 0){
       print(sprintf('L = %s, epsilon = %s, ind = %s',L,epsilon,ind))
     }
+    
     result <- HMC_parallel(RnPosterior, gradient_LP_parallel, epsilon, L, HMC_samples[ind-1,], filter,filter2, pars, M, invM, method = method)
     HMC_samples[ind,] <- result$q
   }
+  
+  ## save results for each epsilon
   message("Saving results")
   write.csv(HMC_samples,sprintf('outputs/samples_L_%s_epsilon_%s.csv',L,epsilon))
   print(acc_rate(HMC_samples))
@@ -114,15 +124,10 @@ for (e in 1:ne){
   save_plot(HMC_samples,sprintf('outputs/plots_L_%s_epsilon_%s.pdf',L,epsilon))
 }
 
+## save plots and ess
 write.csv(ESS_mat,sprintf('outputs/ESS_%s.csv',scale))
 message("Saving plots")
-pdf('outputs/heat_plot.pdf')
-# x <- 1:nL
-# y <- 1:ne
-# data <- expand.grid(X=x, Y=y)
-# data$Z <- (1:nL*ne)
-# ggplot(data,aes(X, Y, fill= Z)) + geom_tile()
-
+pdf('outputs/plot.pdf')
 plot(eps_list,acceptance_rate,type = 'l', xlab = 'epsilon', ylab = 'acceptance rate')
 
 dev.off()

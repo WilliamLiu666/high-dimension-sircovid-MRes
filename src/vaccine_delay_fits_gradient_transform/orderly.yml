@@ -29,7 +29,7 @@ artefacts:
   - staticgraph:
       description: HMC trace plots
       filenames:
-        - outputs/heat_plot.pdf
+        - outputs/plot.pdf
 
 
 sources:
@@ -37,7 +37,7 @@ sources:
   - support.R
 
 resources:
-  - samples.csv
+  - parameters/samples.csv
 
 global_resources:
   global_util.R: rtm_inference/util_new.R
